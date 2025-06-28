@@ -8,7 +8,7 @@
 
 #include "bsp.h"
 
-void bsp_Init(void)
+void bsp_init(void)
 {
     bsp_pwm_init();   // PWM初始化
     bsp_adc_init();   // ADC初始化
@@ -18,6 +18,17 @@ void bsp_Init(void)
     bsp_rs485_init(); // RS485初始化
     nvic_config();    // 中断配置
 }
+
+void init_periheral(unsigned char addr, unsigned int baudrate)
+{
+    bsp_i2c_init();              // I2C初始化
+	bsp_rs485_init1(baudrate, PTY_NONE, DMA_ENABLE);
+	
+	nvic_config();              // 中断配置,有需删除的
+	__enable_irq();             // 开中断
+}	
+
+
 
 void nvic_config(void)
 {

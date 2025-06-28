@@ -53,6 +53,56 @@ void bsp_rs485_init(void)
     usart_enable(RS485_COM);
 }
 
+void bsp_rs485_init1(uint32_t Baudrate, uint16_t parity_bit, uint8_t DMA_enable)
+{
+    /* 使能GPIO和USART时钟 */
+    rcu_periph_clock_enable(RS485_GPIO_CLK);
+    rcu_periph_clock_enable(RS485_COM_CLK);
+
+    /* 配置TX引脚 */
+    gpio_af_set(RS485_GPIO_PORT, RS485_AF, RS485_TX_PIN);
+    gpio_mode_set(RS485_GPIO_PORT, GPIO_MODE_AF, GPIO_PUPD_PULLUP, RS485_TX_PIN);
+    gpio_output_options_set(RS485_GPIO_PORT, GPIO_OTYPE_PP, GPIO_OSPEED_85MHZ, RS485_TX_PIN);
+
+    /* 配置RX引脚 */
+    gpio_af_set(RS485_GPIO_PORT, RS485_AF, RS485_RX_PIN);
+    gpio_mode_set(RS485_GPIO_PORT, GPIO_MODE_AF, GPIO_PUPD_PULLUP, RS485_RX_PIN);
+    gpio_output_options_set(RS485_GPIO_PORT, GPIO_OTYPE_PP, GPIO_OSPEED_85MHZ, RS485_RX_PIN);
+
+    /* 配置RS485方向控制引脚 */
+    gpio_mode_set(RS485_GPIO_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, RS485_RE_PIN);
+    gpio_output_options_set(RS485_GPIO_PORT, GPIO_OTYPE_PP, GPIO_OSPEED_85MHZ, RS485_RE_PIN);
+
+    /* 默认设置为接收模式 */
+    bsp_rs485_receive_mode();
+
+    /* USART配置 */
+    usart_deinit(RS485_COM);
+    usart_baudrate_set(RS485_COM, Baudrate);
+    usart_receive_config(RS485_COM, USART_RECEIVE_ENABLE);
+    usart_transmit_config(RS485_COM, USART_TRANSMIT_ENABLE);
+	// 校验位配置
+	if(parity_bit == PTY_NONE)
+		usart_parity_config(RS485_COM,USART_PM_NONE);
+	else if(parity_bit == PTY_ODD)
+		usart_parity_config(RS485_COM,USART_PM_ODD);
+	else if(parity_bit == PTY_EVEN)
+		usart_parity_config(RS485_COM,USART_PM_EVEN);
+	
+  
+    /* 使能USART空闲中断 */
+    usart_interrupt_enable(RS485_COM, USART_INT_IDLE);
+    /* 使能USART发送完成中断 */
+    usart_interrupt_enable(RS485_COM, USART_INT_TC);
+	if(DMA_enable)
+	{
+		/* 初始化DMA */
+		bsp_rs485_dma_init();
+	}
+    /* 使能USART外设 */
+    usart_enable(RS485_COM);
+}
+
 void bsp_rs485_dma_init(void)
 {
     /* 使能DMA时钟 */

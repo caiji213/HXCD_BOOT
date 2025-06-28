@@ -677,6 +677,46 @@
               <FileType>1</FileType>
               <FilePath>..\..\User\src\at24cxx.c</FilePath>
             </File>
+            <File>
+              <FileName>Bootloader.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\User\src\Bootloader.c</FilePath>
+            </File>
+            <File>
+              <FileName>Bootloader_Check_Force.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\User\src\Bootloader_Check_Force.c</FilePath>
+            </File>
+            <File>
+              <FileName>Decrypt_Block_Data.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\User\src\Decrypt_Block_Data.c</FilePath>
+            </File>
+            <File>
+              <FileName>ModBus_Command_Decode.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\User\src\ModBus_Command_Decode.c</FilePath>
+            </File>
+            <File>
+              <FileName>ModBus_Command_Queue.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\User\src\ModBus_Command_Queue.c</FilePath>
+            </File>
+            <File>
+              <FileName>ModBus_CRC.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\User\src\ModBus_CRC.c</FilePath>
+            </File>
+            <File>
+              <FileName>User_modbus.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\User\src\User_modbus.c</FilePath>
+            </File>
+            <File>
+              <FileName>User_modbus_command_decode.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\User\src\User_modbus_command_decode.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

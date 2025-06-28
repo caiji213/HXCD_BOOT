@@ -45,7 +45,7 @@ int main(void)
 	
 	// 初始化
     systick_config();
-    bsp_Init();
+    bsp_init();
 	
 	// 打印固件版本号与系统时钟频率
     print_system_info();
@@ -108,7 +108,6 @@ int main(void)
 //        }
     }
 }
-
 
 /* 将C库printf函数重定向到USART */
 int fputc(int ch, FILE *f)

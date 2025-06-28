@@ -23,7 +23,7 @@
 #include "bsp_tim_pwm.h"
 
 
-void bsp_Init(void);
+void bsp_init(void);
 void nvic_config(void);
 
 #ifdef __cplusplus

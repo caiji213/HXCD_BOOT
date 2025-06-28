@@ -50,10 +50,30 @@ extern __IO FlagStatus rs485_tx_flag;
 
 /* 函数声明  */
 void bsp_rs485_init(void);
+void bsp_rs485_init1(uint32_t Baudrate, uint16_t parity_bit, uint8_t DMA_enable);
 void bsp_rs485_dma_init(void);
 void bsp_rs485_dma_send(uint8_t *buffer, uint32_t length);
 void bsp_rs485_send_mode(void);
 void bsp_rs485_receive_mode(void);
+
+#define UARTX_RX_BUF_LENGTH		16
+#define UARTX_TX_BUF_LENGTH		16
+
+#define UART_BAUD_9600			0
+#define UART_BAUD_19200			1
+#define UART_BAUD_38400			2
+#define UART_BAUD_57600			3
+#define UART_BAUD_115200		4
+#define UART_BAUD_230400		5
+#define UART_BAUD_921600		6
+#define UART_BAUD_1843200		7
+
+#define PTY_NONE				0
+#define PTY_ODD					1
+#define PTY_EVEN				2
+
+#define DMA_ENABLE				1
+#define DMA_DISENABLE			0
 
 #ifdef __cplusplus
 }
