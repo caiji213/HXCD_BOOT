@@ -707,6 +707,11 @@
               <FileType>1</FileType>
               <FilePath>..\..\User\src\User_modbus_command_decode.c</FilePath>
             </File>
+            <File>
+              <FileName>User_Convert_Int_BytesArray.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\User\src\User_Convert_Int_BytesArray.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

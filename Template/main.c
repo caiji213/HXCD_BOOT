@@ -13,6 +13,8 @@
 #include "gd32g5x3.h"
 #include "gd32g5x3_it.h"
 
+char str_DeviceInfo[64] = "ARM_Boot ";
+
 #define ARRAYNUM(arr_nanme) (uint32_t)(sizeof(arr_nanme) / sizeof(*(arr_nanme)))
 
 /*!

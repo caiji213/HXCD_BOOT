@@ -10,7 +10,17 @@
 #include "gd32g5x3_it.h"
 
 //unsigned short FlashSectors_Row[12] = {FLASH_Sector_0,FLASH_Sector_1,FLASH_Sector_2,FLASH_Sector_3,FLASH_Sector_4,FLASH_Sector_5,FLASH_Sector_6,FLASH_Sector_7,FLASH_Sector_8,FLASH_Sector_9,FLASH_Sector_10,FLASH_Sector_11};
-
+/*
+ * 缺失函数和变量列表：
+ * 
+ * | 序号 | 函数                    |
+ * |------|-------------------------------|
+ * | 1    | SendBytesInfoProcUART2        |232里面实现
+ * | 2    | BigEndianBytesArray_To_Uint32 |
+ * | 3    | Uint32_To_BigEndianBytesArray |
+ * | 4    | BigEndianBytesArray_To_Uint16 |
+ * | 5    | Uint16_To_BigEndianBytesArray |              |
+ */
 #define FlashSectors_APP_Begin 4 //App起始Flash号
 #define FlashSectors_APP_End   9 //App终止Flash号
 
