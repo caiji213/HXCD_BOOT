@@ -16,11 +16,8 @@
 #include "gd32g5x3_libopt.h"
 
 #include "bsp_i2c.h"
-#include "bsp_spi.h"
-#include "bsp_adc.h"
 #include "bsp_rs232.h"
 #include "bsp_rs485.h"
-#include "bsp_tim_pwm.h"
 #include "bsp_deinit.h"
 
 void bsp_deinit(void);

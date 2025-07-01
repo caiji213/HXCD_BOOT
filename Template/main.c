@@ -37,10 +37,10 @@ int main(void)
 	SCB->VTOR = Boot_Vector; 	//更改中断向量地址
 	
 	// 初始化
-    systick_config();
-	bsp_init(115200);
-	ModBus_Init(1); 
-	Bootloader_Hal_Init();
+    systick_config();    // 滴答定时器初始化
+	bsp_init(115200);    //外设初始化+rs485波特率设置
+	ModBus_Init(1);      // modbus初始化
+	Bootloader_Hal_Init(); 
 
     while (1)
     {
