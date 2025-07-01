@@ -74,7 +74,7 @@ extern int Bootloader_Get_Jump_Flag(void);
 extern void Bootloader_Set_Jump_Flag(int value);
 extern int Bootloader_EraseAllFlash(void);
 extern unsigned int Bootloader_GethwID(void);
-
+extern void Bootloader_RunAPP(void);
 
 #ifdef __cplusplus
 }

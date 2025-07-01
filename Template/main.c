@@ -13,9 +13,9 @@
 #include "systick.h"
 #include "gd32g5x3.h"
 #include "gd32g5x3_it.h"
+#include "User_modbus.h"
 #include "Bootloader.h"
 #include "Bootloader_Check_Force.h"
-#include "User_modbus.h"
 #include "User_modbus_command_decode.h"
 
 char str_DeviceInfo[64] = "ARM_Boot ";
@@ -32,16 +32,73 @@ int main(void)
 	uint32_t last_tick = g_sys_tick;  // 时间计数
 	int DoNotCheckTxRxShort = 0;
 	
-	
 	__disable_irq();			//关闭系统总中断
 	SCB->VTOR = Boot_Vector; 	//更改中断向量地址
 	
 	// 初始化
     systick_config();    // 滴答定时器初始化
-	bsp_init(115200);    //外设初始化+rs485波特率设置
+	bsp_init(115200);    // 外设初始化+rs485波特率设置
 	ModBus_Init(1);      // modbus初始化
 	Bootloader_Hal_Init(); 
 
+	
+	if(FLAG_RUNAPP_FORCE == RunAPP_Flag)
+	{
+		//强制进入App，用于参数初始化重启
+		Bootloader_RunAPP();
+	}
+	else if(FLAG_RUNBOOT == RunAPP_Flag)
+	{
+		//有升级标记，需要留在Boot里
+		//初始化外设
+		bsp_init(Boot_Para & 0xFFFFFF);
+		ModBus_Init(Boot_Para >> 24);
+		//回复已跳转到Bootloader
+		ModBus_Command_Decode_Feedback_JumpBootloader(rs485_rxbuffer,Boot_Para >> 24,ModBus_Slave_Response_Data);//升级跳入后第一次uart1回复
+		DoNotCheckTxRxShort = 1;
+	}
+	else
+	{
+	     bsp_init(115200);   
+	     ModBus_Init(1);      
+	}
+
+	if(DoNotCheckTxRxShort)
+	{
+		//进入这里理论上应该是 FLAG_RUNBOOT == RunAPP_Flag，停留在Boot中
+	}
+	else
+	//检查是否强制进入Bootloader
+	if(Bootloader_Check_Force())
+	{
+		RunAPP_Flag = 0xFFFFFFFF; //设置运行标记为-1
+		//I2C_EE_PageRead(buf,0xFFE,2,I2C1);//读原值，主要为调试用
+		//写IIC的初始化参数标志，再重启由APP进行初始化参数
+		delay_1ms(5);
+		//I2C_EE_ByteWrite(0xFF,0xFFE,I2C1);
+		delay_1ms(5);
+		//I2C_EE_ByteWrite(0xFF,0xFFF,I2C1);
+		delay_1ms(5);
+		//停留在Bootloader中，可以进行升级
+	}
+	else
+	if((Bootloader_CheckApp()==0))
+	{
+		//检查app完整性正确，运行App
+		RunAPP_Flag = FLAG_RUNAPP; //设置运行标记为0
+		Bootloader_RunAPP();
+	}
+	else
+	{
+		//检查app失败进入BootLoader
+		RunAPP_Flag = FLAG_CRC_ERROR;
+	}
+
+	//把设备信息加上编译日期
+	strcat(str_DeviceInfo,__DATE__);
+	strcat(str_DeviceInfo," ");
+	strcat(str_DeviceInfo,__TIME__);
+	
     while (1)
     {
 		if ((g_sys_tick - last_tick) >= 1)
@@ -49,7 +106,6 @@ int main(void)
           last_tick = g_sys_tick;
 		  //modbus数据处理函数
 		  ModBus_Slave_Process();
-
         }
     }
 }

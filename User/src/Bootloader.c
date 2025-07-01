@@ -1,15 +1,6 @@
 #include "Bootloader.h"
-//#include "stm32f4xx.h"
-//#include "stm32f4xx_crc.h"
-//#include "User_DMA.h"
-//#include "User_GPIO.h"
-//#include "User_I2C.h"
-//#include "User_uart.h"
-//#include "User_tim.h"
 #include "gd32g5x3.h"
 #include "gd32g5x3_it.h"
-
-//unsigned short FlashSectors_Row[12] = {FLASH_Sector_0,FLASH_Sector_1,FLASH_Sector_2,FLASH_Sector_3,FLASH_Sector_4,FLASH_Sector_5,FLASH_Sector_6,FLASH_Sector_7,FLASH_Sector_8,FLASH_Sector_9,FLASH_Sector_10,FLASH_Sector_11};
 
 #define FlashSectors_APP_Begin 4 //App起始Flash号
 #define FlashSectors_APP_End   9 //App终止Flash号
@@ -372,42 +363,42 @@ unsigned int Bootloader_GethwID(void)
 /*跳转到应用App，跳转之前先关闭已经使用的外设，注意，该函数只能在中断外执行，否则跳转后无法再进入中断*/
 void Bootloader_RunAPP(void)
 {
-	const vector_t *vector_p            = (vector_t*) App_Vector;
-	volatile uint32_t stack_arr[100]    = {0}; // Allocate some stack
-                                               // just to show that
-                                               // the SP should be reset
-                                               // before the jump - or the
-                                               // stack won't be configured
-                                               // correctly.
+//	const vector_t *vector_p            = (vector_t*) App_Vector;
+//	volatile uint32_t stack_arr[100]    = {0}; // Allocate some stack
+//                                               // just to show that
+//                                               // the SP should be reset
+//                                               // before the jump - or the
+//                                               // stack won't be configured
+//                                               // correctly.
 
-	__disable_irq();              		// 1. Disable interrupts
-    //复位所有外设
-    bsp_deinit();
-	
-    __set_MSP(vector_p->stack_addr);     	// 2. Configure stack pointer
-    SCB->VTOR = App_Vector;             	// 3. Configure VTOR
-    vector_p->func_p();                 	// 4. Jump to application
+//	__disable_irq();              		// 1. Disable interrupts
+//    //复位所有外设
+//    bsp_deinit();
+//	
+//    __set_MSP(vector_p->stack_addr);     	// 2. Configure stack pointer
+//    SCB->VTOR = App_Vector;             	// 3. Configure VTOR
+//    vector_p->func_p();                 	// 4. Jump to application
 }
 
 
 /*跳转到Bootloader，跳转之前先关闭已经使用的外设，注意，该函数只能在中断外执行，否则跳转后无法再进入中断*/
 void Bootloader_RunBootloader(void)
 {
-	const vector_t *vector_p            = (vector_t*) Boot_Vector;
-	volatile uint32_t stack_arr[100]    = {0}; // Allocate some stack
-                                               // just to show that
-                                               // the SP should be reset
-                                               // before the jump - or the
-                                               // stack won't be configured
-                                               // correctly.
+//	const vector_t *vector_p            = (vector_t*) Boot_Vector;
+//	volatile uint32_t stack_arr[100]    = {0}; // Allocate some stack
+//                                               // just to show that
+//                                               // the SP should be reset
+//                                               // before the jump - or the
+//                                               // stack won't be configured
+//                                               // correctly.
 
-	__disable_irq();              		// 1. Disable interrupts
-	//复位所有外设
-	bsp_deinit();
+//	__disable_irq();              		// 1. Disable interrupts
+//	//复位所有外设
+//	bsp_deinit();
 
-    __set_MSP(vector_p->stack_addr);     	// 2. Configure stack pointer
-    SCB->VTOR = Boot_Vector;             	// 3. Configure VTOR
-    vector_p->func_p();                 	// 4. Jump to application
+//    __set_MSP(vector_p->stack_addr);     	// 2. Configure stack pointer
+//    SCB->VTOR = Boot_Vector;             	// 3. Configure VTOR
+//    vector_p->func_p();                 	// 4. Jump to application
 }
 
 

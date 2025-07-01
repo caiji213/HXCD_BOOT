@@ -43,8 +43,6 @@ void nvic_config(void)
     // I²C中断配置
     nvic_irq_enable(I2C_TX_DMA_IRQn, 1, 1); // I²C TX
     nvic_irq_enable(I2C_RX_DMA_IRQn, 1, 1); // I²C RX
-
-
 }
 
 
