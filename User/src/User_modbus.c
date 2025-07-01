@@ -52,9 +52,7 @@ void ModBus_ChangeAddr(unsigned char addr)
 //extern void SendBytesInfoProcUART2(unsigned char * pSendInfo, unsigned int nSendCount);
 void ModBus_Slave_Response_Data(unsigned char * buf, unsigned int len)
 {
-	//UART3发送一帧指令，DMA模式
-	//DMAx_Uart2TX_Enable(UART2, DMA1_Stream6, buf, len);
-	//DMAx_Uart1TX_Enable(USART1, DMA2_Stream7, buf, len);
+	//rs485发送一帧指令，DMA模式
 	bsp_rs485_dma_send(buf,len);
 }
  
@@ -101,7 +99,6 @@ void ModBus_Slave_Process(void)
 						break;
 					case CMD_FROM_USART2:
 						ModBus_Command_Decode(p->Slave_Received_Data,p->Slave_Received_Data_Len,bsp_rs232_dma_send);
-					    //ModBus_Command_Decode(p->Slave_Received_Data,p->Slave_Received_Data_Len,SendBytesInfoProcUART2);
 						break;
 					default:
 						break;

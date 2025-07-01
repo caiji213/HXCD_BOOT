@@ -128,6 +128,7 @@ void ModBus_Command_Decode_General_Func_Read_HW_ID(unsigned char * buf, unsigned
 	ModBus_Fill_CRC16(buf,len);
 	Feedback(buf,len);
 }
+
 //modbus–¥»Î”≤º˛ID∫≈
 void ModBus_Command_Decode_General_Func_Write_HW_ID(unsigned char * buf, unsigned int len, void (*Feedback)(unsigned char * buf, unsigned int len))
 {

@@ -31,7 +31,6 @@ int Bootloader_Check_Force(void)
 	//检查串口的TXD和RXD是否短路
 	//首先发送一串字符串
 	delay_1ms(500);
-	//DMAx_Uart1TX_Enable(USART1, DMA2_Stream7, data_to_send, data_to_send_length);
 	bsp_rs485_dma_send(data_to_send, data_to_send_length);
 	//延时等待
 	delay_1ms(500);

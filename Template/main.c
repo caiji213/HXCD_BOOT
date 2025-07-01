@@ -29,27 +29,6 @@ char str_DeviceInfo[64] = "ARM_Boot ";
 ////Boot_Para 占用4个字节, 低24位是波特率，最高8位是ID
 //__no_init uint32_t Boot_Para __attribute__ ((section(".ARM.__at_0x20000004")));
 
-/*!
-    \brief 打印固件版本号与系统时钟频率
-*/
-void print_system_info(void)
-{
-    uint32_t fw_ver = gd32g5x3_firmware_version_get();
-
-    printf("\r\n----------------------------------------");
-    printf("\r\nHXCD_GD32G5X3 firmware version: V%d.%d.%d",
-           (uint8_t)(fw_ver >> 24),
-           (uint8_t)(fw_ver >> 16),
-           (uint8_t)(fw_ver >> 8));
-
-    printf("\r\nSystem Clocks:");
-    printf("\r\n  CK_SYS  = %d Hz", rcu_clock_freq_get(CK_SYS));
-    printf("\r\n  CK_AHB  = %d Hz", rcu_clock_freq_get(CK_AHB));
-    printf("\r\n  CK_APB1 = %d Hz", rcu_clock_freq_get(CK_APB1));
-    printf("\r\n  CK_APB2 = %d Hz", rcu_clock_freq_get(CK_APB2));
-    printf("\r\n----------------------------------------\r\n");
-}
-
 int main(void)
 {
 	// 变量定义
@@ -59,12 +38,9 @@ int main(void)
 	
 	// 初始化
     systick_config();
-    //bsp_init();
 	init_periheral(115200);
 	ModBus_Init(1); //Modbus初始化
 	
-	// 打印固件版本号与系统时钟频率
-    print_system_info();
 
 	/* I2C测试 */
     if(I2C_OK == i2c_24c64_test()) 
