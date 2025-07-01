@@ -33,6 +33,7 @@ uint8_t i2c_24c64_test(void);
 void i2c_eeprom_init(void);
 void i2c_dma_tx_callback(void);
 void i2c_dma_rx_callback(void);
+uint8_t eeprom_byte_write(uint8_t data, uint16_t write_address);
 void eeprom_buffer_write(uint8_t *p_buffer, uint16_t write_address, uint16_t number_of_byte);
 void eeprom_page_write(uint8_t *p_buffer, uint16_t write_address, uint16_t number_of_byte); 
 void eeprom_buffer_read(uint8_t *p_buffer, uint16_t read_address, uint16_t number_of_byte); 

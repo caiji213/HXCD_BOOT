@@ -72,12 +72,12 @@ int main(void)
 	if(Bootloader_Check_Force())
 	{
 		RunAPP_Flag = 0xFFFFFFFF; //设置运行标记为-1
-		//I2C_EE_PageRead(buf,0xFFE,2,I2C1);//读原值，主要为调试用
+		eeprom_buffer_write(buf,0xFFE,2);//读原值，主要为调试用
 		//写IIC的初始化参数标志，再重启由APP进行初始化参数
 		delay_1ms(5);
-		//I2C_EE_ByteWrite(0xFF,0xFFE,I2C1);
+		eeprom_byte_write(0xFF,0xFFE);
 		delay_1ms(5);
-		//I2C_EE_ByteWrite(0xFF,0xFFF,I2C1);
+		eeprom_byte_write(0xFF,0xFFF);
 		delay_1ms(5);
 		//停留在Bootloader中，可以进行升级
 	}

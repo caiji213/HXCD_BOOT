@@ -510,6 +510,98 @@ void eeprom_page_write(uint8_t *p_buffer, uint16_t write_address, uint16_t numbe
   }
 }
 
+/*!
+    \brief      Write a single byte to EEPROM
+    \param[in]  data: data to write
+    \param[in]  write_address: address to write to
+    \param[out] none
+    \retval     I2C_OK or I2C_FAIL
+*/
+uint8_t eeprom_byte_write(uint8_t data, uint16_t write_address)
+{
+    i2c_process_enum write_state = I2C_START;
+    uint16_t timeout = 0;
+    uint8_t end_flag = 0;
+    uint8_t result = I2C_OK;
+
+    // 初始化传输缓冲区（地址+数据）
+    tx_buffer[0] = (write_address >> 8) & 0xFF; // 地址高字节
+    tx_buffer[1] = write_address & 0xFF;        // 地址低字节
+    tx_buffer[2] = data;                        // 写入的数据
+
+    while (!end_flag)
+    {
+        switch (write_state)
+        {
+        case I2C_START:
+            // 发送起始信号和设备地址（写模式）
+            i2c_master_addressing(I2CX, eeprom_address, I2C_MASTER_TRANSMIT);
+            i2c_transfer_byte_number_config(I2CX, 3); // 总字节数：2字节地址 + 1字节数据
+            i2c_automatic_end_enable(I2CX);           // 启用自动停止
+
+            // 等待总线空闲
+            timeout = 0;
+            while (i2c_flag_get(I2CX, I2C_FLAG_I2CBSY) && (timeout < I2C_TIME_OUT)) {
+                timeout++;
+            }
+
+            if (timeout < I2C_TIME_OUT) {
+                i2c_start_on_bus(I2CX);
+                write_state = I2C_TRANSMIT_DATA;
+            } else {
+                i2c_bus_reset();
+                result = I2C_FAIL;
+                end_flag = 1;
+            }
+            break;
+
+        case I2C_TRANSMIT_DATA:
+            // 使用DMA传输数据（3字节）
+            i2c_dma_tx_complete = RESET;
+            i2c_dma_tx_config((uint32_t)tx_buffer, 3);
+
+            // 等待DMA传输完成
+            timeout = 0;
+            while ((i2c_dma_tx_complete == RESET) && (timeout < I2C_TIME_OUT)) {
+                timeout++;
+            }
+
+            if (timeout >= I2C_TIME_OUT) {
+                result = I2C_FAIL;
+                end_flag = 1;
+            } else {
+                write_state = I2C_STOP;
+            }
+            break;
+
+        case I2C_STOP:
+            // 等待停止条件产生
+            timeout = 0;
+            while (!i2c_flag_get(I2CX, I2C_FLAG_STPDET) && (timeout < I2C_TIME_OUT)) {
+                timeout++;
+            }
+
+            if (timeout < I2C_TIME_OUT) {
+                i2c_flag_clear(I2CX, I2C_FLAG_STPDET);
+                end_flag = 1;
+                result = I2C_OK;
+            } else {
+                i2c_bus_reset();
+                result = I2C_FAIL;
+                end_flag = 1;
+            }
+            break;
+
+        default:
+            end_flag = 1;
+            result = I2C_FAIL;
+            break;
+        }
+    }
+
+    return result;
+}
+
 void eeprom_buffer_read(uint8_t *p_buffer, uint16_t read_address, uint16_t number_of_byte)
 {
   i2c_process_enum state = I2C_START;
