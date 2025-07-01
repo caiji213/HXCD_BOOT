@@ -664,6 +664,11 @@
               <FileType>1</FileType>
               <FilePath>..\..\Utilities\src\bsp_adc.c</FilePath>
             </File>
+            <File>
+              <FileName>bsp_deinit.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Utilities\src\bsp_deinit.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

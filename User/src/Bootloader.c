@@ -141,7 +141,6 @@ unsigned long Bootloader_GetBootCRC(void)
 	else
 	{
 		//使用硬件计算CRC
-		//crc = CRC_CalcBlockCRC((uint32_t *)(Boot_Flash_Info.start_addr), boot_size / sizeof(uint32_t));
 	    crc = crc_block_data_calculate((void *)Boot_Flash_Info.start_addr, boot_size, INPUT_FORMAT_WORD);
 	}
 
@@ -192,7 +191,6 @@ unsigned long Bootloader_GetAppCRC(void)
 	else
 	{
 		//使用硬件计算CRC
-		//crc = CRC_CalcBlockCRC((uint32_t *)(App_Flash_Info.start_addr),app_size / sizeof(uint32_t));
 		crc = crc_block_data_calculate((void *)App_Flash_Info.start_addr, app_size, INPUT_FORMAT_WORD);
 	}
 
@@ -207,21 +205,21 @@ int Bootloader_EraseApp(void)
 {
 	unsigned char index = 0;
 	int ret = 0;
-	__disable_irq(); //关中断
-	//解除flash锁定
-	fmc_unlock();
-	//擦除全部Appflash
-	for(index = FlashSectors_APP_Begin;index <= FlashSectors_APP_End;index++)
-	{
-//		if(FLASH_EraseSector(FlashSectors_Row[index],VoltageRange_3) != FLASH_COMPLETE)
-//		{
-//			ret = 1;
-//			break;
-//		}
-	}
-	//重新锁定flash
-	fmc_lock();
-	__enable_irq(); //开中断
+//	__disable_irq(); //关中断
+//	//解除flash锁定
+//	fmc_unlock();
+//	//擦除全部Appflash
+//	for(index = FlashSectors_APP_Begin;index <= FlashSectors_APP_End;index++)
+//	{
+////		if(FLASH_EraseSector(FlashSectors_Row[index],VoltageRange_3) != FLASH_COMPLETE)
+////		{
+////			ret = 1;
+////			break;
+////		}
+//	}
+//	//重新锁定flash
+//	fmc_lock();
+//	__enable_irq(); //开中断
 	return ret;
 }
 
@@ -233,21 +231,21 @@ int Bootloader_EraseAllFlash(void)
 {
 	unsigned char index = 0;
 	int ret = 0;
-	__disable_irq(); //关中断
-	//解除flash锁定
-	fmc_unlock();
-	//擦除全部Appflash
-	for(index = 0;index < 12;index++)
-	{
-//		if(FLASH_EraseSector(FlashSectors_Row[index],VoltageRange_3) != FLASH_COMPLETE)
-//		{
-//			ret = 1;
-//			break;
-//		}
-	}
-	//重新锁定flash
-	fmc_lock();
-	__enable_irq(); //开中断
+//	__disable_irq(); //关中断
+//	//解除flash锁定
+//	fmc_unlock();
+//	//擦除全部Appflash
+//	for(index = 0;index < 12;index++)
+//	{
+////		if(FLASH_EraseSector(FlashSectors_Row[index],VoltageRange_3) != FLASH_COMPLETE)
+////		{
+////			ret = 1;
+////			break;
+////		}
+//	}
+//	//重新锁定flash
+//	fmc_lock();
+//	__enable_irq(); //开中断
 	return ret;
 }
 
@@ -271,36 +269,36 @@ int Bootloader_ProgramBlock(unsigned char * buf, unsigned long address, unsigned
 {
 	unsigned long * words;
 	int i,ret=0;
-	if(size % 4)
-	{
-		return 1;
-	}
+//	if(size % 4)
+//	{
+//		return 1;
+//	}
 
-	//转换为32位数据的指针
-	words = (unsigned long *)buf;
+//	//转换为32位数据的指针
+//	words = (unsigned long *)buf;
 
-	__disable_irq(); //关中断
-	//解除flash锁定
-	fmc_unlock();
-	//写入flash数据
-	for (i = 0; i < size; i+=4)
-	{
-//		if(FLASH_ProgramWord(App_Flash_Info.start_addr + address + i,words[i/4]) != FLASH_COMPLETE)
-//		{
-//			//flash数据写入失败
-//			ret = 1;
-//			break;
-//		}
-//		if(FLASH_Varify_ProgramWord(App_Flash_Info.start_addr + address + i,words[i/4]) != FLASH_COMPLETE)
-//		{
-//			//flash数据校验失败
-//			ret = 1;
-//			break;
-//		}
-	}
-	//重新锁定flash
-	fmc_lock();
-	__enable_irq(); //开中断
+//	__disable_irq(); //关中断
+//	//解除flash锁定
+//	fmc_unlock();
+//	//写入flash数据
+//	for (i = 0; i < size; i+=4)
+//	{
+////		if(FLASH_ProgramWord(App_Flash_Info.start_addr + address + i,words[i/4]) != FLASH_COMPLETE)
+////		{
+////			//flash数据写入失败
+////			ret = 1;
+////			break;
+////		}
+////		if(FLASH_Varify_ProgramWord(App_Flash_Info.start_addr + address + i,words[i/4]) != FLASH_COMPLETE)
+////		{
+////			//flash数据校验失败
+////			ret = 1;
+////			break;
+////		}
+//	}
+//	//重新锁定flash
+//	fmc_lock();
+//	__enable_irq(); //开中断
 
 	return ret;
 }
@@ -314,20 +312,20 @@ unsigned long Bootloader_Read_Stored_CRC(void)
 int Bootloader_Write_App_CRC(unsigned long crc)
 {
 	int ret;
-	__disable_irq(); //关中断
-	//解除flash锁定
-	fmc_unlock();
-//	if(FLASH_ProgramWord(App_Info.addr_crc,crc) == FLASH_COMPLETE)
-//		ret = 0;
-//	else
-//		ret = -1;
-	//重新锁定flash
-	fmc_lock();
-	__enable_irq(); //开中断
-	if (ret == 0)
-	{
-		App_Info.crc = crc;
-	}
+//	__disable_irq(); //关中断
+//	//解除flash锁定
+//	fmc_unlock();
+////	if(FLASH_ProgramWord(App_Info.addr_crc,crc) == FLASH_COMPLETE)
+////		ret = 0;
+////	else
+////		ret = -1;
+//	//重新锁定flash
+//	fmc_lock();
+//	__enable_irq(); //开中断
+//	if (ret == 0)
+//	{
+//		App_Info.crc = crc;
+//	}
 	return ret;
 }
 /*读取App程序大小*/
@@ -339,20 +337,20 @@ unsigned long Bootloader_Read_App_Size(void)
 int Bootloader_Write_App_Size(unsigned long size)
 {
 	int ret;
-	__disable_irq(); //关中断
-	//解除flash锁定
-	fmc_unlock();
-//	if(FLASH_ProgramWord(App_Info.addr_size,size) == FLASH_COMPLETE)
-//		ret = 0;
-//	else
-//		ret = -1;
-	//重新锁定flash
-	fmc_lock();
-	__enable_irq(); //开中断
-	if (ret == 0)
-	{
-		App_Info.size = size;
-	}
+//	__disable_irq(); //关中断
+//	//解除flash锁定
+//	fmc_unlock();
+////	if(FLASH_ProgramWord(App_Info.addr_size,size) == FLASH_COMPLETE)
+////		ret = 0;
+////	else
+////		ret = -1;
+//	//重新锁定flash
+//	fmc_lock();
+//	__enable_irq(); //开中断
+//	if (ret == 0)
+//	{
+//		App_Info.size = size;
+//	}
 	return ret;
 }
 
@@ -383,13 +381,9 @@ void Bootloader_RunAPP(void)
                                                // correctly.
 
 	__disable_irq();              		// 1. Disable interrupts
-
-//	DMA_Deinit();
-//	UART_Deinit();
-//	GPIO_DeInitAll();
-//	TIMx_Deinit();
-//	I2C_DeInit_All();
-
+    //复位所有外设
+    bsp_deinit();
+	
     __set_MSP(vector_p->stack_addr);     	// 2. Configure stack pointer
     SCB->VTOR = App_Vector;             	// 3. Configure VTOR
     vector_p->func_p();                 	// 4. Jump to application
@@ -408,11 +402,8 @@ void Bootloader_RunBootloader(void)
                                                // correctly.
 
 	__disable_irq();              		// 1. Disable interrupts
-
-//	DMA_Deinit();
-//	UART_Deinit();
-//	GPIO_DeInitAll();
-//	TIMx_Deinit();
+	//复位所有外设
+	bsp_deinit();
 
     __set_MSP(vector_p->stack_addr);     	// 2. Configure stack pointer
     SCB->VTOR = Boot_Vector;             	// 3. Configure VTOR

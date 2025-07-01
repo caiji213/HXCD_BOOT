@@ -19,6 +19,15 @@ void bsp_init(void)
     nvic_config();    // 中断配置
 }
 
+void bsp_deinit(void)
+{
+    dma_deinit_all();       // 复位所有 DMA 通道
+    uart_deinit_all();      // 复位所有串口
+    gpio_deinit_all();      // 复位所有 GPIO 端口
+    timer_deinit_all();     // 复位所有定时器
+    i2c_deinit_all();       // 复位所有 I2C 总线
+}
+
 void init_periheral(unsigned int baudrate)
 {
     bsp_i2c_init();              // I2C初始化
@@ -27,8 +36,6 @@ void init_periheral(unsigned int baudrate)
 	nvic_config();              // 中断配置,有需删除的
 	__enable_irq();             // 开中断
 }	
-
-
 
 void nvic_config(void)
 {
@@ -59,3 +66,6 @@ void nvic_config(void)
     nvic_irq_enable(SPI2_TX_DMA_IRQn, 1, 1); // SPI2 TX 
     nvic_irq_enable(SPI2_RX_DMA_IRQn, 1, 1); // SPI2 RX 
 }
+
+
+

@@ -18,16 +18,14 @@
 #include "User_modbus.h"
 #include "User_modbus_command_decode.h"
 
-
 char str_DeviceInfo[64] = "ARM_Boot ";
+uint8_t buf[2]={0,0};
 
-#define __no_init __attribute__((zero_init))
+
 #define ARRAYNUM(arr_nanme) (uint32_t)(sizeof(arr_nanme) / sizeof(*(arr_nanme)))
 	
-////RunAPP_Flag 0x55555555强制跳转App，0xAAAAAAAA是留在Boot的升级标记
-//__no_init uint32_t RunAPP_Flag __attribute__ ((section(".ARM.__at_0x20000000")));
-////Boot_Para 占用4个字节, 低24位是波特率，最高8位是ID
-//__no_init uint32_t Boot_Para __attribute__ ((section(".ARM.__at_0x20000004")));
+__attribute__((section(".ARM.__at_0x20000000"))) uint32_t RunAPP_Flag;
+__attribute__((section(".ARM.__at_0x20000004"))) uint32_t Boot_Para;
 
 int main(void)
 {
@@ -36,18 +34,21 @@ int main(void)
     const uint8_t rs232_txbuffer[] = "RS232 DMA with IDLE interrupt\r\n";
 	const uint8_t rs485_txbuffer[] = "RS485 DMA with IDLE interrupt\r\n";
 	
+	int DoNotCheckTxRxShort = 0;
+	__disable_irq();			//关闭系统总中断
+	SCB->VTOR = Boot_Vector; 	//更改中断向量地址
 	// 初始化
     systick_config();
 	init_periheral(115200);
 	ModBus_Init(1); //Modbus初始化
-	
+	Bootloader_Hal_Init();
 
 	/* I2C测试 */
-    if(I2C_OK == i2c_24c64_test()) 
-	{  
-       printf("\r\ni2c_24c64_test succeed %d", I2C_SPEED);
-    }
-	
+//    if(I2C_OK == i2c_24c64_test()) 
+//	{  
+//       printf("\r\ni2c_24c64_test succeed %d", I2C_SPEED);
+//    }
+//	
     while (1)
     {
 		if ((g_sys_tick - last_tick) >= 1)

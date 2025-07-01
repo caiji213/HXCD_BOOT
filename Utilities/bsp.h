@@ -21,9 +21,10 @@
 #include "bsp_rs232.h"
 #include "bsp_rs485.h"
 #include "bsp_tim_pwm.h"
-
+#include "bsp_deinit.h"
 
 void bsp_init(void);
+void bsp_deinit(void);
 void nvic_config(void);
 void init_periheral(unsigned int baudrate);
 
