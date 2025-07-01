@@ -45,13 +45,5 @@ void DMA0_Channel3_IRQHandler(void);
 /* I²C DMA中断声明 */
 void DMA0_Channel4_IRQHandler(void);
 void DMA0_Channel5_IRQHandler(void);
-/* SPI2 DMA中断服务函数 */
-void DMA1_Channel1_IRQHandler(void);
-void DMA1_Channel0_IRQHandler(void);
-/*ADC采样中断服务函数*/
-void ADC0_1_IRQHandler(void);
-void ADC2_IRQHandler(void);
-void ADC3_IRQHandler(void);
-void TIMER0_CH_IRQHandler(void);
-void DMA0_Channel6_IRQHandler(void);
+
 #endif /* GD32G5X3_IT_H */

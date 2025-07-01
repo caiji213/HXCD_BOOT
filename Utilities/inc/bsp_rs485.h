@@ -49,8 +49,7 @@ extern __IO FlagStatus rs485_idle_flag;
 extern __IO FlagStatus rs485_tx_flag;
 
 /* 函数声明  */
-void bsp_rs485_init(void);
-void bsp_rs485_init1(uint32_t Baudrate, uint16_t parity_bit, uint8_t DMA_enable);
+void bsp_rs485_init(uint32_t Baudrate, uint16_t parity_bit, uint8_t DMA_enable);
 void bsp_rs485_dma_init(void);
 void bsp_rs485_dma_send(uint8_t *buffer, uint32_t length);
 void bsp_rs485_send_mode(void);
