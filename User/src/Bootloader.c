@@ -10,17 +10,7 @@
 #include "gd32g5x3_it.h"
 
 //unsigned short FlashSectors_Row[12] = {FLASH_Sector_0,FLASH_Sector_1,FLASH_Sector_2,FLASH_Sector_3,FLASH_Sector_4,FLASH_Sector_5,FLASH_Sector_6,FLASH_Sector_7,FLASH_Sector_8,FLASH_Sector_9,FLASH_Sector_10,FLASH_Sector_11};
-/*
- * 缺失函数和变量列表：
- * 
- * | 序号 | 函数                    |
- * |------|-------------------------------|
- * | 1    | SendBytesInfoProcUART2        |232里面实现
- * | 2    | BigEndianBytesArray_To_Uint32 |
- * | 3    | Uint32_To_BigEndianBytesArray |
- * | 4    | BigEndianBytesArray_To_Uint16 |
- * | 5    | Uint16_To_BigEndianBytesArray |              |
- */
+
 #define FlashSectors_APP_Begin 4 //App起始Flash号
 #define FlashSectors_APP_End   9 //App终止Flash号
 
@@ -40,12 +30,12 @@ Bank0：0x08000000 - 0x0803FFFF，共256页
 Bank1：0x08040000 - 0x0807FFFF，共256页
 
 页编号	Page	Begin	      End	        Size(Dec)	Size(hex)
-Bank0-000	0	0x08000000	0x080003FF	1024	    0x400
+Bank0-000	0	0x08000000	0x080003FF	1024	    0x400    <- Boot 起始页
 Bank0-001	1	0x08000400	0x080007FF	1024	    0x400
 Bank0-002	2	0x08000800	0x08000BFF	1024	    0x400
 ...         ...	...	        ...	        ...	        ...
 Bank0-047	47	0x0800BC00	0x0800BFFF	1024	    0x400    <- Boot 最后一页
-Bank0-048	48	0x0800C000	0x0800C3FF	1024	    0x400
+Bank0-048	48	0x0800C000	0x0800C3FF	1024	    0x400    <- Info 起始页
 ...         ...	...	        ...	        ...	        ...
 Bank0-060	60	0x0800F000	0x0800F3FF	1024	    0x400    <- Info 最后一页
 Bank0-061	61	0x0800F400	0x0800F7FF	1024	    0x400    <- App 起始页

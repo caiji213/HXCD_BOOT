@@ -5,6 +5,7 @@
     \version 2025-06-05, V1.1.0, firmware for GD32G5x3
 */
 #include "gd32g5x3_it.h"
+#include "User_modbus.h"
 
 volatile uint32_t g_sys_tick = 0; // 全局系统滴答计数器
 
@@ -253,6 +254,9 @@ void USART1_IRQHandler(void)
         dma_transfer_number_config(RS485_RX_DMA, RS485_RX_DMA_CH, RS485_DMA_SIZE);
         dma_flag_clear(RS485_RX_DMA, RS485_RX_DMA_CH, DMA_FLAG_FTF);
         dma_channel_enable(RS485_RX_DMA, RS485_RX_DMA_CH);
+		
+		 /* ========== Modbus 数据处理入口 ========== */
+        ModBus_Slave_Received_Data(rs485_rxbuffer, rs485_rx_count, CMD_FROM_USART1);
     }
 
     /* 发送完成中断处理 */
@@ -267,6 +271,9 @@ void USART1_IRQHandler(void)
         bsp_rs485_receive_mode();
         /* 更新标志 */
         rs485_tx_flag = SET;
+		
+		/* ========== Modbus 发送完成回调 ========== */
+        ModBus_Slave_Send_Finished();
     }
 
     // 处理溢出错误

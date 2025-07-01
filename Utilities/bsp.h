@@ -25,6 +25,7 @@
 
 void bsp_init(void);
 void nvic_config(void);
+void init_periheral(unsigned int baudrate);
 
 #ifdef __cplusplus
 }

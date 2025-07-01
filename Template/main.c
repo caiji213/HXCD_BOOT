@@ -6,16 +6,28 @@
 */
 
 #include <stdio.h>
+#include <string.h>
 
 #include "main.h"
 #include "bsp.h"
 #include "systick.h"
 #include "gd32g5x3.h"
 #include "gd32g5x3_it.h"
+#include "Bootloader.h"
+#include "Bootloader_Check_Force.h"
+#include "User_modbus.h"
+#include "User_modbus_command_decode.h"
+
 
 char str_DeviceInfo[64] = "ARM_Boot ";
 
+#define __no_init __attribute__((zero_init))
 #define ARRAYNUM(arr_nanme) (uint32_t)(sizeof(arr_nanme) / sizeof(*(arr_nanme)))
+	
+////RunAPP_Flag 0x55555555强制跳转App，0xAAAAAAAA是留在Boot的升级标记
+//__no_init uint32_t RunAPP_Flag __attribute__ ((section(".ARM.__at_0x20000000")));
+////Boot_Para 占用4个字节, 低24位是波特率，最高8位是ID
+//__no_init uint32_t Boot_Para __attribute__ ((section(".ARM.__at_0x20000004")));
 
 /*!
     \brief 打印固件版本号与系统时钟频率
@@ -47,7 +59,9 @@ int main(void)
 	
 	// 初始化
     systick_config();
-    bsp_init();
+    //bsp_init();
+	init_periheral(115200);
+	ModBus_Init(1); //Modbus初始化
 	
 	// 打印固件版本号与系统时钟频率
     print_system_info();
@@ -60,27 +74,35 @@ int main(void)
 	
     while (1)
     {
-        /* RS232测试 */
-        if (rs232_idle_flag == SET)
+		if ((g_sys_tick - last_tick) >= 1)
         {
-            if(rx_count > 0)
-            {
-                // 使用DMA发送接收到的数据
-                bsp_rs232_dma_send(rs232_rxbuffer, rx_count);
-            }
-            rs232_idle_flag = RESET;
+          last_tick = g_sys_tick;
+		  //modbus数据处理函数
+		  ModBus_Slave_Process();
+
         }
+		
+        /* RS232测试 */
+//        if (rs232_idle_flag == SET)
+//        {
+//            if(rx_count > 0)
+//            {
+//                // 使用DMA发送接收到的数据
+//                bsp_rs232_dma_send(rs232_rxbuffer, rx_count);
+//            }
+//            rs232_idle_flag = RESET;
+//        }
         
         /* RS485测试 */
-        if (rs485_idle_flag == SET)
-        {
-            if (rs485_rx_count > 0)
-            {
-                // 使用DMA发送接收到的数据
-                bsp_rs485_dma_send(rs485_rxbuffer, rs485_rx_count);
-            }
-            rs485_idle_flag = RESET;
-        }
+//        if (rs485_idle_flag == SET)
+//        {
+//            if (rs485_rx_count > 0)
+//            {
+//                // 使用DMA发送接收到的数据
+//                bsp_rs485_dma_send(rs485_rxbuffer, rs485_rx_count);
+//            }
+//            rs485_idle_flag = RESET;
+//        }
         /* 主动发送串口数据 */
 //        if ((g_sys_tick - last_tick) >= 1000)
 //        {
@@ -90,17 +112,17 @@ int main(void)
 
 //        }
         /* SPI测试 */
-        if ((g_sys_tick - last_tick) >= 10)
-        {
-            last_tick = g_sys_tick;
-			
-			// 启动SSI接收传输
-            bsp_spi_transfer(SSI_DATA_SIZE);
+//        if ((g_sys_tick - last_tick) >= 10)
+//        {
+//            last_tick = g_sys_tick;
+//			
+//			// 启动SSI接收传输
+//            bsp_spi_transfer(SSI_DATA_SIZE);
 
-           // 处理接收到的数据
-           process_spi_data(spi_rx_buffer, SPI_BUFFER_SIZE);
+//           // 处理接收到的数据
+//           process_spi_data(spi_rx_buffer, SPI_BUFFER_SIZE);
 
-        }
+//        }
 		
 		/* PWM测试 + ADC测试*/
 //        if ((g_sys_tick - last_tick) >= 10)

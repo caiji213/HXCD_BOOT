@@ -19,7 +19,7 @@ void bsp_init(void)
     nvic_config();    // 中断配置
 }
 
-void init_periheral(unsigned char addr, unsigned int baudrate)
+void init_periheral(unsigned int baudrate)
 {
     bsp_i2c_init();              // I2C初始化
 	bsp_rs485_init1(baudrate, PTY_NONE, DMA_ENABLE);
