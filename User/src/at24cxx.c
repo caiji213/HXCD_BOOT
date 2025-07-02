@@ -511,6 +511,46 @@ void eeprom_page_write(uint8_t *p_buffer, uint16_t write_address, uint16_t numbe
 }
 
 /*!
+    \brief      Quick single-byte write test without data restoration
+    \param[in]  test_address: EEPROM address to test
+    \param[in]  test_value: Value to write and verify
+    \param[out] none
+    \retval     I2C_OK if test passes, I2C_FAIL otherwise
+*/
+uint8_t quick_byte_test(uint16_t test_address, uint8_t test_value)
+{
+    printf("\r\n=== Quick Byte Test ===\r\n");
+    printf("Testing address: 0x%04X\r\n", test_address);
+    
+    // 读取当前值（仅用于信息）
+    uint8_t current_value;
+    eeprom_buffer_read(&current_value, test_address, 1);
+    printf("Current value: 0x%02X\r\n", current_value);
+    
+    // 执行写入操作
+    printf("Writing 0x%02X... ", test_value);
+    uint8_t write_status = eeprom_byte_write(test_value, test_address);
+    printf("%s\r\n", (write_status == I2C_OK) ? "OK" : "FAIL");
+    
+    // 简短延迟（EEPROM需要时间完成写入）
+    delay_1ms(5);
+    
+    // 读取验证
+    uint8_t read_value;
+    eeprom_buffer_read(&read_value, test_address, 1);
+    printf("Read value: 0x%02X\r\n", read_value);
+    
+    // 验证结果
+    if (read_value == test_value) {
+        printf("Result: PASSED (Wrote 0x%02X, Read 0x%02X)\r\n", test_value, read_value);
+        return I2C_OK;
+    } else {
+        printf("Result: FAILED (Expected 0x%02X, Got 0x%02X)\r\n", test_value, read_value);
+        return I2C_FAIL;
+    }
+}
+
+/*!
     \brief      Write a single byte to EEPROM
     \param[in]  data: data to write
     \param[in]  write_address: address to write to

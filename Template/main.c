@@ -41,7 +41,18 @@ int main(void)
 	ModBus_Init(1);      // modbus初始化
 	Bootloader_Hal_Init(); 
 
-	
+    // 运行快速测试
+//    uint16_t test_addr = 0x1234;  // 选择测试地址
+//    uint8_t test_data = 0x11;     // 选择测试数据
+//    
+//    uint8_t result = quick_byte_test(test_addr, test_data);
+//    
+//    if (result == I2C_OK) {
+//        printf("EEPROM byte operation successful!\r\n");
+//    } else {
+//        printf("EEPROM byte operation failed!\r\n");
+//    }
+    
 	if(FLAG_RUNAPP_FORCE == RunAPP_Flag)
 	{
 		//强制进入App，用于参数初始化重启
