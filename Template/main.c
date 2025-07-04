@@ -37,36 +37,22 @@ int main(void)
 	
 	// 初始化
     systick_config();    // 滴答定时器初始化
-	bsp_init(115200);    // 外设初始化+rs485波特率设置
-	ModBus_Init(1);      // modbus初始化
 	Bootloader_Hal_Init(); 
 
-    // 运行快速测试
-//    uint16_t test_addr = 0x1234;  // 选择测试地址
-//    uint8_t test_data = 0x11;     // 选择测试数据
-//    
-//    uint8_t result = quick_byte_test(test_addr, test_data);
-//    
-//    if (result == I2C_OK) {
-//        printf("EEPROM byte operation successful!\r\n");
-//    } else {
-//        printf("EEPROM byte operation failed!\r\n");
-//    }
-    
-	if(FLAG_RUNAPP_FORCE == RunAPP_Flag)
+	if(RunAPP_Flag == FLAG_RUNAPP_FORCE)
 	{
 		//强制进入App，用于参数初始化重启
-		Bootloader_RunAPP();
+//		Bootloader_RunAPP();
 	}
-	else if(FLAG_RUNBOOT == RunAPP_Flag)
+	else if(RunAPP_Flag == FLAG_RUNBOOT)
 	{
 		//有升级标记，需要留在Boot里
 		//初始化外设
-		bsp_init(Boot_Para & 0xFFFFFF);
-		ModBus_Init(Boot_Para >> 24);
-		//回复已跳转到Bootloader
-		ModBus_Command_Decode_Feedback_JumpBootloader(rs485_rxbuffer,Boot_Para >> 24,ModBus_Slave_Response_Data);//升级跳入后第一次uart1回复
-		DoNotCheckTxRxShort = 1;
+//		bsp_init(Boot_Para & 0xFFFFFF);
+//		ModBus_Init(Boot_Para >> 24);
+//		//回复已跳转到Bootloader
+//		ModBus_Command_Decode_Feedback_JumpBootloader(rs485_rxbuffer,Boot_Para >> 24,ModBus_Slave_Response_Data);//升级跳入后第一次uart1回复
+//		DoNotCheckTxRxShort = 1;
 	}
 	else
 	{
@@ -74,36 +60,36 @@ int main(void)
 	     ModBus_Init(1);      
 	}
 
-	if(DoNotCheckTxRxShort)
-	{
-		//进入这里理论上应该是 FLAG_RUNBOOT == RunAPP_Flag，停留在Boot中
-	}
-	else
-	//检查是否强制进入Bootloader
-	if(Bootloader_Check_Force())
-	{
-		RunAPP_Flag = 0xFFFFFFFF; //设置运行标记为-1
-		eeprom_buffer_write(buf,0xFFE,2);//读原值，主要为调试用
-		//写IIC的初始化参数标志，再重启由APP进行初始化参数
-		delay_1ms(5);
-		eeprom_byte_write(0xFF,0xFFE);
-		delay_1ms(5);
-		eeprom_byte_write(0xFF,0xFFF);
-		delay_1ms(5);
-		//停留在Bootloader中，可以进行升级
-	}
-	else
-	if((Bootloader_CheckApp()==0))
-	{
-		//检查app完整性正确，运行App
-		RunAPP_Flag = FLAG_RUNAPP; //设置运行标记为0
-		Bootloader_RunAPP();
-	}
-	else
-	{
-		//检查app失败进入BootLoader
-		RunAPP_Flag = FLAG_CRC_ERROR;
-	}
+//	if(DoNotCheckTxRxShort)
+//	{
+//		//进入这里理论上应该是 FLAG_RUNBOOT == RunAPP_Flag，停留在Boot中
+//	}
+//	
+//	//检查是否强制进入Bootloader
+//	else if(Bootloader_Check_Force())
+//	{
+//		RunAPP_Flag = 0xFFFFFFFF; //设置运行标记为-1
+//		eeprom_buffer_write(buf,0xFFE,2);//读原值，主要为调试用
+//		//写IIC的初始化参数标志，再重启由APP进行初始化参数
+//		delay_1ms(5);
+//		eeprom_byte_write(0xFF,0xFFE);
+//		delay_1ms(5);
+//		eeprom_byte_write(0xFF,0xFFF);
+//		delay_1ms(5);
+//		//停留在Bootloader中，可以进行升级
+//	}
+//	
+//	else if((Bootloader_CheckApp()==0))
+//	{
+//		//检查app完整性正确，运行App
+//		RunAPP_Flag = FLAG_RUNAPP; //设置运行标记为0
+//		Bootloader_RunAPP();
+//	}
+//	else
+//	{
+//		//检查app失败进入BootLoader
+//		RunAPP_Flag = FLAG_CRC_ERROR;
+//	}
 
 	//把设备信息加上编译日期
 	strcat(str_DeviceInfo,__DATE__);

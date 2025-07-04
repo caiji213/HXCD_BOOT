@@ -38,7 +38,7 @@ Bank1-000	0	0x08040000	0x080403FF	1024	    0x400
 Bank1-192	192	0x0807C000	0x0807C3FF	1024	    0x400
 ...         ...	...	        ...	        ...	        ...
 Bank1-252	252	0x0807FC00	0x0807FFFF	1024	    0x400    <- App 最后一页
-Bank1-253	253	0x08080000	0x080803FF	1024	    0x400
+Bank1-253	253	0x08080000	0x080803FF	1024	    0x400    <- Data 起始页
 Bank1-254	254	0x08080400	0x080807FF	1024	    0x400
 Bank1-255	255	0x08080800	0x08080BFF	1024	    0x400    <- Data 最后一页
 
@@ -52,7 +52,6 @@ Data 使用 Bank1 页 253~255    （3KB）           -> 0x08080000 ~ 0x08080BFF
 
 void Bootloader_Hal_Init(void)
 {
-
 	//Bootloader Flash信息
 	Boot_Flash_Info.page_size = 0x4000;
 	Boot_Flash_Info.start_addr = Boot_Vector;
@@ -363,21 +362,21 @@ unsigned int Bootloader_GethwID(void)
 /*跳转到应用App，跳转之前先关闭已经使用的外设，注意，该函数只能在中断外执行，否则跳转后无法再进入中断*/
 void Bootloader_RunAPP(void)
 {
-//	const vector_t *vector_p            = (vector_t*) App_Vector;
-//	volatile uint32_t stack_arr[100]    = {0}; // Allocate some stack
-//                                               // just to show that
-//                                               // the SP should be reset
-//                                               // before the jump - or the
-//                                               // stack won't be configured
-//                                               // correctly.
+	const vector_t *vector_p            = (vector_t*) App_Vector;
+	volatile uint32_t stack_arr[100]    = {0}; // Allocate some stack
+                                               // just to show that
+                                               // the SP should be reset
+                                               // before the jump - or the
+                                               // stack won't be configured
+                                               // correctly.
 
-//	__disable_irq();              		// 1. Disable interrupts
-//    //复位所有外设
-//    bsp_deinit();
-//	
-//    __set_MSP(vector_p->stack_addr);     	// 2. Configure stack pointer
-//    SCB->VTOR = App_Vector;             	// 3. Configure VTOR
-//    vector_p->func_p();                 	// 4. Jump to application
+	__disable_irq();              		// 1. Disable interrupts
+    //复位所有外设
+    bsp_deinit();
+	
+    __set_MSP(vector_p->stack_addr);     	// 2. Configure stack pointer
+    SCB->VTOR = App_Vector;             	// 3. Configure VTOR
+    vector_p->func_p();                 	// 4. Jump to application
 }
 
 
