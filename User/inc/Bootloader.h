@@ -52,11 +52,11 @@ extern "C"
 #define BOOT_SIZE           (16U * 1024UL)  // 16KB
 #define BOOT_END_ADDR       (BOOT_START_ADDR + BOOT_SIZE - 1)  // 0x08003FFF
 
-#define INFO_START_ADDR      0x08004000UL   // Crypto 区起始地址
+#define INFO_START_ADDR     (BOOT_START_ADDR + BOOT_SIZE)      // 0x08004000UL   // Crypto 区起始地址
 #define INFO_SIZE           (1U * 1024UL)   // 1KB
 #define INFO_END_ADDR       (INFO_START_ADDR + INFO_SIZE - 1)  // 0x080043FF
 
-#define APP_START_ADDR       0x08004400UL   // App 区起始地址
+#define APP_START_ADDR      (INFO_START_ADDR + INFO_SIZE)      // 0x08004400UL   // App 区起始地址
 #define APP_SIZE            (495U * 1024UL) // 495KB
 #define APP_END_ADDR        (APP_START_ADDR + APP_SIZE - 1)    // 0x0807FFFF
 
@@ -72,10 +72,6 @@ extern "C"
 #define FLAG_CRC_ERROR 0x45435243    // CRCE
 
 /* ================== 其他常量定义 ================== */
-#define App_Offset 0x10000UL
-#define Boot_Vector 0x08000000UL
-#define App_Vector (Boot_Vector + App_Offset)
-// #define SRAM_BASE            0x20000000UL
 #define Sram_UpdateFlag_Vector (SRAM_BASE)
 
     extern void Bootloader_Hal_Init(void);

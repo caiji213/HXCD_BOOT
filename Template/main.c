@@ -33,7 +33,7 @@ int main(void)
 	int DoNotCheckTxRxShort = 0;
 	
 	__disable_irq();			//关闭系统总中断
-	SCB->VTOR = Boot_Vector; 	//更改中断向量地址
+	SCB->VTOR = BOOT_START_ADDR; 	//更改中断向量地址
 	
 	// 初始化
     systick_config();    // 滴答定时器初始化
