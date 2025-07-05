@@ -1,403 +1,286 @@
 #include "Bootloader.h"
-#include "gd32g5x3.h"
-#include "gd32g5x3_it.h"
+#include "gd32g5x3_fmc.h"
 
-#define FlashSectors_APP_Begin 4 //App起始Flash号
-#define FlashSectors_APP_End   9 //App终止Flash号
-
+// 全局变量定义
 Memory_Info App_Flash_Info;
 Memory_Info Boot_Flash_Info;
 Memory_Info Ram_Info;
 
-int Bootloader_Jump_Flag = 0; //跳转标记
-
+int Bootloader_Jump_Flag = 0;
 Info_t App_Info;
 Info_t Boot_Info;
 
-/*
-Flash信息，GD32G553，512KB Flash，双 Bank 模式（DBS=1）
-每页大小：1KB
-Bank0：0x08000000 - 0x0803FFFF，共256页
-Bank1：0x08040000 - 0x0807FFFF，共256页
+// 自定义常量
+#define FLASH_PAGE_SIZE     fmc_page_size_get()  // 动态获取页大小
+//#define FMC_TIMEOUT_COUNT   1000000UL            // FMC操作超时计数
 
-页编号	Page	Begin	      End	        Size(Dec)	Size(hex)
-Bank0-000	0	0x08000000	0x080003FF	1024	    0x400    <- Boot 起始页
-Bank0-001	1	0x08000400	0x080007FF	1024	    0x400
-Bank0-002	2	0x08000800	0x08000BFF	1024	    0x400
-...         ...	...	        ...	        ...	        ...
-Bank0-047	47	0x0800BC00	0x0800BFFF	1024	    0x400    <- Boot 最后一页
-Bank0-048	48	0x0800C000	0x0800C3FF	1024	    0x400    <- Info 起始页
-...         ...	...	        ...	        ...	        ...
-Bank0-060	60	0x0800F000	0x0800F3FF	1024	    0x400    <- Info 最后一页
-Bank0-061	61	0x0800F400	0x0800F7FF	1024	    0x400    <- App 起始页
-...         ...	...	        ...	        ...	        ...
-Bank0-255	255	0x0803FC00	0x0803FFFF	1024	    0x400
+// ===================================================================
+// 辅助函数
+// ===================================================================
 
-Bank1-000	0	0x08040000	0x080403FF	1024	    0x400
-...         ...	...	        ...	        ...	        ...
-Bank1-192	192	0x0807C000	0x0807C3FF	1024	    0x400
-...         ...	...	        ...	        ...	        ...
-Bank1-252	252	0x0807FC00	0x0807FFFF	1024	    0x400    <- App 最后一页
-Bank1-253	253	0x08080000	0x080803FF	1024	    0x400    <- Data 起始页
-Bank1-254	254	0x08080400	0x080807FF	1024	    0x400
-Bank1-255	255	0x08080800	0x08080BFF	1024	    0x400    <- Data 最后一页
+// 配置Flash等待状态（必须调用）
+static void configure_flash_waitstates(void)
+{
+    // 设置FMC等待状态为7 (216MHz需要)
+    fmc_wscnt_set(FMC_WAIT_STATE_7);
+}
 
-分区规划：
-Boot 使用 Bank0 页 0~47       （48KB）          -> 0x08000000 ~ 0x0800BFFF
-Info 使用 Bank0 页 48~60      （13KB）          -> 0x0800C000 ~ 0x0800F3FF
-App  使用 Bank0 页 61~255 + Bank1 页 0~252（448KB） -> 0x0800F400 ~ 0x0807FFFF
-Data 使用 Bank1 页 253~255    （3KB）           -> 0x08080000 ~ 0x08080BFF
-*/
+// 双字编程原子操作
+static int program_doubleword(uint32_t address, uint64_t data)
+{
+    fmc_state_enum status = fmc_doubleword_program(address, data);
+    
+    if(status != FMC_READY) {
+        return 1;
+    }
+    
+    // 清除错误标志
+    fmc_flag_clear(FMC_FLAG_WPERR | FMC_FLAG_PGERR);
+    
+    return 0;
+}
 
+// 元数据编程函数（原子操作）
+static int program_metadata(uint32_t size, uint32_t crc)
+{
+    uint32_t meta_addr = APP_SIZE_ADDR;
+    uint64_t combined = ((uint64_t)crc << 32) | size;
+    
+    return program_doubleword(meta_addr, combined);
+}
+
+// ===================================================================
+// 公开函数实现
+// ===================================================================
 
 void Bootloader_Hal_Init(void)
 {
-//	//Bootloader Flash信息
-//	Boot_Flash_Info.page_size = 0x4000;
-//	Boot_Flash_Info.start_addr = Boot_Vector;
-//	Boot_Flash_Info.size = App_Offset;
-//	Boot_Flash_Info.end_addr = Boot_Flash_Info.start_addr + Boot_Flash_Info.size - 1;
-//	Boot_Flash_Info.page_num = Boot_Flash_Info.size / Boot_Flash_Info.page_size;
+    // 配置216MHz等待状态
+    configure_flash_waitstates();
+    
+    // Bootloader Flash信息
+    Boot_Flash_Info.page_size = FLASH_PAGE_SIZE;
+    Boot_Flash_Info.start_addr = BOOT_START_ADDR;
+    Boot_Flash_Info.size = BOOT_SIZE;
+    Boot_Flash_Info.end_addr = BOOT_END_ADDR;
+    Boot_Flash_Info.page_num = BOOT_SIZE / FLASH_PAGE_SIZE;
 
-//	//App Flash信息，由于应用App扇区大小不一致，不再按照统一大小区分扇区，将扇区2-11全部划分为App扇区
-//	App_Flash_Info.page_size = 0;
-//	App_Flash_Info.start_addr = App_Vector;
-//	App_Flash_Info.size = 0xB0000UL;
-//	App_Flash_Info.end_addr = App_Flash_Info.start_addr + App_Flash_Info.size - 1;
-//	App_Flash_Info.page_num = 0;
+    // App Flash信息
+    App_Flash_Info.page_size = FLASH_PAGE_SIZE;
+    App_Flash_Info.start_addr = APP_START_ADDR;
+    App_Flash_Info.size = APP_SIZE;
+    App_Flash_Info.end_addr = APP_END_ADDR;
+    App_Flash_Info.page_num = APP_SIZE / FLASH_PAGE_SIZE;
 
-//	//RAM信息，设置SRAM大小为128kB
-//	Ram_Info.page_size = 4;
-//	Ram_Info.start_addr = Sram_UpdateFlag_Vector;			//设置存储升级标记SRAM起始地址为0x2001FFE0
-//	Ram_Info.size = 0x10;									//设置存储升级标记SRAM大小为16B
-//	Ram_Info.end_addr = Sram_UpdateFlag_Vector + Ram_Info.size - 1;
-//	Ram_Info.page_num = Ram_Info.size / Ram_Info.page_size;
+    // RAM信息 (保留16字节存储标志)
+    Ram_Info.page_size = 4;
+    Ram_Info.start_addr = SRAM_BASE;
+    Ram_Info.size = 0x10; // 16字节
+    Ram_Info.end_addr = SRAM_BASE + 0x10 - 1;
+    Ram_Info.page_num = 4;
 
-//	//APP信息，将App程序的大小信息、CRC校验信息全部放在Appflash最后一个扇区的前8个字节，每个信息4字节
+    // App信息
+    App_Info.addr_size = APP_SIZE_ADDR;
+    App_Info.addr_crc = APP_CRC_ADDR;
+    App_Info.size = *((uint32_t *)(App_Info.addr_size));
+    App_Info.crc = *((uint32_t *)(App_Info.addr_crc));
+    App_Info.hwId = Bootloader_GethwID();
 
-//	App_Info.addr_size = App_Flash_Info.start_addr + App_Flash_Info.size - 8;
-//	App_Info.addr_crc = App_Flash_Info.start_addr + App_Flash_Info.size - 4;
-//	App_Info.size = *((unsigned long *)(App_Info.addr_size));
-//	App_Info.crc = *((unsigned long *)(App_Info.addr_crc));
-//	App_Info.hwId = 0x21;
-
-//	//Boot信息，将bootloader程序的大小信息、CRC校验信息全部放在bootloader flash扇区的最后8个字节，每个信息4个字节
-//	Boot_Info.addr_size = Boot_Flash_Info.start_addr + Boot_Flash_Info.size - 8;
-//	Boot_Info.addr_crc = Boot_Flash_Info.start_addr + Boot_Flash_Info.size - 4;
-//	Boot_Info.size = *((unsigned long *)(Boot_Info.addr_size));
-//	Boot_Info.crc = *((unsigned long *)(Boot_Info.addr_crc));
-//	Boot_Info.hwId = 0x21;
+    // Boot信息
+    Boot_Info.addr_size = BOOT_END_ADDR - 7;
+    Boot_Info.addr_crc = BOOT_END_ADDR - 3;
+    Boot_Info.size = *((uint32_t *)(Boot_Info.addr_size));
+    Boot_Info.crc = *((uint32_t *)(Boot_Info.addr_crc));
+    Boot_Info.hwId = Bootloader_GethwID();
 }
 
+int Bootloader_EraseApp(void)
+{
+    fmc_state_enum status;
+    uint32_t i;
+    
+    // 解锁Flash
+    fmc_unlock();
+    
+    // Bank0擦除 (页61-255, 195页)
+    for(i = 61; i <= 255; i++) {
+        status = fmc_page_erase(FMC_BANK0, i);
+        if(status != FMC_READY) {
+            fmc_lock();
+            return 1;
+        }
+    }
+    
+    // Bank1擦除 (页0-252, 253页)
+    for(i = 0; i <= 252; i++) {
+        status = fmc_page_erase(FMC_BANK1, i);
+        if(status != FMC_READY) {
+            fmc_lock();
+            return 1;
+        }
+    }
+    
+    // 重新锁定Flash
+    fmc_lock();
+    return 0;
+}
+
+int Bootloader_EraseAllFlash(void)
+{
+    fmc_state_enum status;
+    
+    // 解锁Flash
+    fmc_unlock();
+    
+    // Bank0整块擦除
+    status = fmc_bank0_erase();
+    if(status != FMC_READY) {
+        fmc_lock();
+        return 1;
+    }
+    
+    // Bank1整块擦除
+    status = fmc_bank1_erase();
+    fmc_lock();
+    
+    return (status == FMC_READY) ? 0 : 1;
+}
+
+int Bootloader_ProgramBlock(unsigned char * buf, uint32_t address, uint32_t size)
+{
+    // 确保地址在APP区域
+    if(address < APP_START_ADDR || address > APP_END_ADDR)
+        return 1;
+    
+    // 确保大小是8的倍数 (双字对齐)
+    if(size % 8 != 0)
+        return 2;
+    
+    uint32_t words = size / 8;
+    uint64_t *data_ptr = (uint64_t*)buf;
+    
+    for(uint32_t i = 0; i < words; i++) {
+        if(program_doubleword(address + i*8, data_ptr[i]) != 0) {
+            return 3;
+        }
+    }
+    return 0;
+}
+
+int Bootloader_Write_App_CRC(uint32_t crc)
+{
+    // 原子操作写入元数据
+    return program_metadata(App_Info.size, crc);
+}
+
+int Bootloader_Write_App_Size(uint32_t size)
+{
+    // 原子操作写入元数据
+    return program_metadata(size, App_Info.crc);
+}
+
+void Bootloader_RunAPP(void)
+{
+    const vector_t *vector_p = (vector_t*)App_Flash_Info.start_addr;
+    
+    __disable_irq();  // 关闭所有中断
+    
+    // 重置所有外设到默认状态
+    rcu_deinit();
+    
+    // 配置堆栈指针和向量表
+    __set_MSP(vector_p->stack_addr);
+    SCB->VTOR = App_Flash_Info.start_addr;
+    
+    // 跳转到应用
+    vector_p->func_p();
+    
+    // 理论上不会执行到这里
+    while(1);
+}
+
+// ===================================================================
+// 其他函数实现
+// ===================================================================
 
 /* 检查Boot区域完整性*/
 int Bootloader_CheckBoot(void)
 {
-	unsigned int boot_size,boot_crc;
-	unsigned int crc;
+    uint32_t boot_size = Boot_Info.size;
+    uint32_t boot_crc = Boot_Info.crc;
 
-	boot_size = Boot_Info.size;
-	boot_crc = Boot_Info.crc;
-
-	/* 校验CRC */
-	if(boot_size > Boot_Flash_Info.size)
-	{
-		//比Flash还大，明显错误，不计算
-		return 1;
-	}
-	else
-	{
-		crc = Bootloader_GetBootCRC();
-		return (crc != boot_crc);
-	}
+    if(boot_size > Boot_Flash_Info.size) 
+        return 1;
+    
+    uint32_t crc = Bootloader_GetBootCRC();
+    return (crc != boot_crc);
 }
-
-/* 检查Boot程序的CRC校验结果*/
-unsigned long Bootloader_GetBootCRC(void)
-{
-	unsigned int boot_size;
-	unsigned int crc;
-
-	boot_size = Boot_Info.size;
-
-    crc_deinit();                                           // 复位CRC计算单元
-	
-	if(Boot_Info.size > Boot_Flash_Info.size)
-	{
-		//比Flash还大，明显错误，不计算
-		crc = 0;
-	}
-	else
-	{
-		//使用硬件计算CRC
-	    crc = crc_block_data_calculate((void *)Boot_Flash_Info.start_addr, boot_size, INPUT_FORMAT_WORD);
-	}
-
-	/* 校验CRC */
-	return crc;
-}
-
 
 /* 检查APP区域完整性*/
 int Bootloader_CheckApp(void)
 {
-	unsigned int app_size,app_crc;
-	unsigned int crc;
+    uint32_t app_size = App_Info.size;
+    uint32_t app_crc = App_Info.crc;
 
-	app_size = App_Info.size;
-	app_crc = App_Info.crc;
-
-	/* 校验CRC */
-	if(app_size > App_Flash_Info.size)
-	{
-		//比Flash还大，明显错误，不计算
-		return 1;
-	}
-	else
-	{
-		__disable_irq();
-		crc = Bootloader_GetAppCRC();
-		__enable_irq();
-		return (crc != app_crc);
-	}
+    if(app_size > App_Flash_Info.size)
+        return 1;
+    
+    uint32_t crc = Bootloader_GetAppCRC();
+    return (crc != app_crc);
 }
+
+/* 检查Boot程序的CRC校验结果*/
+uint32_t Bootloader_GetBootCRC(void)
+{
+    uint32_t boot_size = Boot_Info.size;
+    
+    crc_deinit(); // 复位CRC
+    
+    if(boot_size > Boot_Flash_Info.size)
+        return 0;
+    
+    return crc_block_data_calculate((void *)Boot_Flash_Info.start_addr, 
+                                    boot_size, 
+                                    INPUT_FORMAT_WORD);
+}
+
 /* 检查APP程序的CRC结果*/
-unsigned long Bootloader_GetAppCRC(void)
+uint32_t Bootloader_GetAppCRC(void)
 {
-	unsigned int app_size;
-	unsigned int crc;
-
-	app_size = App_Info.size;
-
-    crc_deinit(); 
-	
-	if(App_Info.size > App_Flash_Info.size)
-	{
-		//比Flash还大，明显错误，不计算
-		crc = 0;
-	}
-	else
-	{
-		//使用硬件计算CRC
-		crc = crc_block_data_calculate((void *)App_Flash_Info.start_addr, app_size, INPUT_FORMAT_WORD);
-	}
-
-	/* 校验CRC */
-	return crc;
+    uint32_t app_size = App_Info.size;
+    
+    crc_deinit(); // 复位CRC
+    
+    if(app_size > App_Flash_Info.size)
+        return 0;
+    
+    return crc_block_data_calculate((void *)App_Flash_Info.start_addr, 
+                                    app_size, 
+                                    INPUT_FORMAT_WORD);
 }
 
-/*
-* 擦除APP区域,FLASH_Sector_2到FLASH_Sector_10
-*/
-int Bootloader_EraseApp(void)
+uint32_t Bootloader_Read_Stored_CRC(void)
 {
-	unsigned char index = 0;
-	int ret = 0;
-//	__disable_irq(); //关中断
-//	//解除flash锁定
-//	fmc_unlock();
-//	//擦除全部Appflash
-//	for(index = FlashSectors_APP_Begin;index <= FlashSectors_APP_End;index++)
-//	{
-////		if(FLASH_EraseSector(FlashSectors_Row[index],VoltageRange_3) != FLASH_COMPLETE)
-////		{
-////			ret = 1;
-////			break;
-////		}
-//	}
-//	//重新锁定flash
-//	fmc_lock();
-//	__enable_irq(); //开中断
-	return ret;
+    return *((uint32_t *)(App_Info.addr_crc));
 }
 
-
-/*
-* 擦除全部flash区域,FLASH_Sector_0到FLASH_Sector_11
-*/
-int Bootloader_EraseAllFlash(void)
+uint32_t Bootloader_Read_App_Size(void)
 {
-	unsigned char index = 0;
-	int ret = 0;
-//	__disable_irq(); //关中断
-//	//解除flash锁定
-//	fmc_unlock();
-//	//擦除全部Appflash
-//	for(index = 0;index < 12;index++)
-//	{
-////		if(FLASH_EraseSector(FlashSectors_Row[index],VoltageRange_3) != FLASH_COMPLETE)
-////		{
-////			ret = 1;
-////			break;
-////		}
-//	}
-//	//重新锁定flash
-//	fmc_lock();
-//	__enable_irq(); //开中断
-	return ret;
-}
-
-
-/*校验flash写入数据是否正确*/
-//FLASH_Status FLASH_Varify_ProgramWord(unsigned long Address, unsigned long programword)
-//{
-//	FLASH_Status status;
-//	unsigned long varification = 0;
-//	varification = * (unsigned long *)(Address);
-//	if(varification != programword)
-//		status = FLASH_ERROR_PROGRAM;
-//	else
-//		status = FLASH_COMPLETE;
-//	return status;
-//}
-
-
-/* 整块烧录，size必须为4字节整数倍 */
-int Bootloader_ProgramBlock(unsigned char * buf, unsigned long address, unsigned int size)
-{
-	unsigned long * words;
-	int i,ret=0;
-//	if(size % 4)
-//	{
-//		return 1;
-//	}
-
-//	//转换为32位数据的指针
-//	words = (unsigned long *)buf;
-
-//	__disable_irq(); //关中断
-//	//解除flash锁定
-//	fmc_unlock();
-//	//写入flash数据
-//	for (i = 0; i < size; i+=4)
-//	{
-////		if(FLASH_ProgramWord(App_Flash_Info.start_addr + address + i,words[i/4]) != FLASH_COMPLETE)
-////		{
-////			//flash数据写入失败
-////			ret = 1;
-////			break;
-////		}
-////		if(FLASH_Varify_ProgramWord(App_Flash_Info.start_addr + address + i,words[i/4]) != FLASH_COMPLETE)
-////		{
-////			//flash数据校验失败
-////			ret = 1;
-////			break;
-////		}
-//	}
-//	//重新锁定flash
-//	fmc_lock();
-//	__enable_irq(); //开中断
-
-	return ret;
-}
-
-/*获取存储在flash中的App CRC校验结果*/
-unsigned long Bootloader_Read_Stored_CRC(void)
-{
-	return App_Info.crc;
-}
-/*App CRC校验结果写入flash*/
-int Bootloader_Write_App_CRC(unsigned long crc)
-{
-	int ret;
-//	__disable_irq(); //关中断
-//	//解除flash锁定
-//	fmc_unlock();
-////	if(FLASH_ProgramWord(App_Info.addr_crc,crc) == FLASH_COMPLETE)
-////		ret = 0;
-////	else
-////		ret = -1;
-//	//重新锁定flash
-//	fmc_lock();
-//	__enable_irq(); //开中断
-//	if (ret == 0)
-//	{
-//		App_Info.crc = crc;
-//	}
-	return ret;
-}
-/*读取App程序大小*/
-unsigned long Bootloader_Read_App_Size(void)
-{
-	return App_Info.size;
-}
-/*写入App程序大小*/
-int Bootloader_Write_App_Size(unsigned long size)
-{
-	int ret;
-//	__disable_irq(); //关中断
-//	//解除flash锁定
-//	fmc_unlock();
-////	if(FLASH_ProgramWord(App_Info.addr_size,size) == FLASH_COMPLETE)
-////		ret = 0;
-////	else
-////		ret = -1;
-//	//重新锁定flash
-//	fmc_lock();
-//	__enable_irq(); //开中断
-//	if (ret == 0)
-//	{
-//		App_Info.size = size;
-//	}
-	return ret;
+    return *((uint32_t *)(App_Info.addr_size));
 }
 
 int Bootloader_Get_Jump_Flag(void)
 {
-	return Bootloader_Jump_Flag;
+    return Bootloader_Jump_Flag;
 }
 
 void Bootloader_Set_Jump_Flag(int value)
 {
-	Bootloader_Jump_Flag = value;
+    Bootloader_Jump_Flag = value;
 }
 
-unsigned int Bootloader_GethwID(void)
+uint32_t Bootloader_GethwID(void)
 {
-	return 0x21;
+    // 读取芯片ID (具体寄存器需参考手册)
+    return *((uint32_t *)0x1FFFF7E8);
 }
-
-/*跳转到应用App，跳转之前先关闭已经使用的外设，注意，该函数只能在中断外执行，否则跳转后无法再进入中断*/
-void Bootloader_RunAPP(void)
-{
-//	const vector_t *vector_p            = (vector_t*) App_Vector;
-//	volatile uint32_t stack_arr[100]    = {0}; // Allocate some stack
-//                                               // just to show that
-//                                               // the SP should be reset
-//                                               // before the jump - or the
-//                                               // stack won't be configured
-//                                               // correctly.
-
-//	__disable_irq();              		// 1. Disable interrupts
-//    //复位所有外设
-//    bsp_deinit();
-//	
-//    __set_MSP(vector_p->stack_addr);     	// 2. Configure stack pointer
-//    SCB->VTOR = App_Vector;             	// 3. Configure VTOR
-//    vector_p->func_p();                 	// 4. Jump to application
-}
-
-
-/*跳转到Bootloader，跳转之前先关闭已经使用的外设，注意，该函数只能在中断外执行，否则跳转后无法再进入中断*/
-void Bootloader_RunBootloader(void)
-{
-//	const vector_t *vector_p            = (vector_t*) Boot_Vector;
-//	volatile uint32_t stack_arr[100]    = {0}; // Allocate some stack
-//                                               // just to show that
-//                                               // the SP should be reset
-//                                               // before the jump - or the
-//                                               // stack won't be configured
-//                                               // correctly.
-
-//	__disable_irq();              		// 1. Disable interrupts
-//	//复位所有外设
-//	bsp_deinit();
-
-//    __set_MSP(vector_p->stack_addr);     	// 2. Configure stack pointer
-//    SCB->VTOR = Boot_Vector;             	// 3. Configure VTOR
-//    vector_p->func_p();                 	// 4. Jump to application
-}
-
-
-
-
