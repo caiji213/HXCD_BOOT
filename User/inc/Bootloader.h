@@ -44,18 +44,46 @@ typedef struct vector
     application_t   *func_p;        // intvec[1] is initial Program Counter
 } vector_t;
 
+/* ================== Flash 分区定义 ================== */
+#define BOOT_START_ADDR       0x08000000UL
+#define BOOT_SIZE             (48U * 1024UL)   // 48KB
+#define BOOT_END_ADDR         (BOOT_START_ADDR + BOOT_SIZE - 1UL)
 
-#define App_Offset 0x10000U
-#define App_Vector (0x08000000UL + App_Offset)   // Application vector address
-#define Boot_Vector 0x08000000UL   // Bootloader vector address
-#define Sram_Vector 0x20000000UL
-#define Sram_UpdateFlag_Vector 0x20000000UL
+#define INFO_START_ADDR       0x0800C000UL
+#define INFO_SIZE             (13U * 1024UL)   // 13KB
+#define INFO_END_ADDR         (INFO_START_ADDR + INFO_SIZE - 1UL)
 
+#define APP_START_ADDR        0x0800F400UL
+#define APP_SIZE              (448U * 1024UL)  // 448KB
+#define APP_END_ADDR          (APP_START_ADDR + APP_SIZE - 1UL)
+
+#define DATA_START_ADDR       0x08080000UL
+#define DATA_SIZE             (3U * 1024UL)    // 3KB
+#define DATA_END_ADDR         (DATA_START_ADDR + DATA_SIZE - 1UL)
+
+/* ================== 元数据存储位置 ================== */
+#define APP_SIZE_ADDR         (APP_END_ADDR - 7UL)  // 0x0807FFF9
+#define APP_CRC_ADDR          (APP_END_ADDR - 3UL)  // 0x0807FFFD
+
+/* ================== FMC 标志定义 ================== */
+#define FMC_FLAG_END          FMC_STAT_END
+#define FMC_FLAG_WPERR        FMC_STAT_WPERR
+#define FMC_FLAG_PGERR        FMC_STAT_PGERR
+
+/* ================== 运行标志定义 ================== */
 #define FLAG_RUNAPP_FORCE					0x70704166 //fApp 强制进入App
 #define FLAG_GO_APP							0x70704167 //gApp 指令进入App
 #define FLAG_RUNAPP							0x00707041 //App 正常进入App
 #define FLAG_RUNBOOT						0x746F6F42 //Boot
 #define FLAG_CRC_ERROR						0x45435243 //CRCE
+
+/* ================== 其他常量定义 ================== */
+#define App_Offset            0x10000UL
+#define Boot_Vector      0x08000000UL
+#define App_Vector       (Boot_Vector + App_Offset)
+#define Sram_Vector      0x20000000UL
+#define Sram_UpdateFlag_Vector 0x20000000UL
+
 
 #define CFG_BOOTLOADER
 

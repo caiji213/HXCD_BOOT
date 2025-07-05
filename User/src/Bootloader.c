@@ -52,41 +52,41 @@ Data 使用 Bank1 页 253~255    （3KB）           -> 0x08080000 ~ 0x08080BFF
 
 void Bootloader_Hal_Init(void)
 {
-	//Bootloader Flash信息
-	Boot_Flash_Info.page_size = 0x4000;
-	Boot_Flash_Info.start_addr = Boot_Vector;
-	Boot_Flash_Info.size = App_Offset;
-	Boot_Flash_Info.end_addr = Boot_Flash_Info.start_addr + Boot_Flash_Info.size - 1;
-	Boot_Flash_Info.page_num = Boot_Flash_Info.size / Boot_Flash_Info.page_size;
+//	//Bootloader Flash信息
+//	Boot_Flash_Info.page_size = 0x4000;
+//	Boot_Flash_Info.start_addr = Boot_Vector;
+//	Boot_Flash_Info.size = App_Offset;
+//	Boot_Flash_Info.end_addr = Boot_Flash_Info.start_addr + Boot_Flash_Info.size - 1;
+//	Boot_Flash_Info.page_num = Boot_Flash_Info.size / Boot_Flash_Info.page_size;
 
-	//App Flash信息，由于应用App扇区大小不一致，不再按照统一大小区分扇区，将扇区2-11全部划分为App扇区
-	App_Flash_Info.page_size = 0;
-	App_Flash_Info.start_addr = App_Vector;
-	App_Flash_Info.size = 0xB0000UL;
-	App_Flash_Info.end_addr = App_Flash_Info.start_addr + App_Flash_Info.size - 1;
-	App_Flash_Info.page_num = 0;
+//	//App Flash信息，由于应用App扇区大小不一致，不再按照统一大小区分扇区，将扇区2-11全部划分为App扇区
+//	App_Flash_Info.page_size = 0;
+//	App_Flash_Info.start_addr = App_Vector;
+//	App_Flash_Info.size = 0xB0000UL;
+//	App_Flash_Info.end_addr = App_Flash_Info.start_addr + App_Flash_Info.size - 1;
+//	App_Flash_Info.page_num = 0;
 
-	//RAM信息，设置SRAM大小为128kB
-	Ram_Info.page_size = 4;
-	Ram_Info.start_addr = Sram_UpdateFlag_Vector;			//设置存储升级标记SRAM起始地址为0x2001FFE0
-	Ram_Info.size = 0x10;									//设置存储升级标记SRAM大小为16B
-	Ram_Info.end_addr = Sram_UpdateFlag_Vector + Ram_Info.size - 1;
-	Ram_Info.page_num = Ram_Info.size / Ram_Info.page_size;
+//	//RAM信息，设置SRAM大小为128kB
+//	Ram_Info.page_size = 4;
+//	Ram_Info.start_addr = Sram_UpdateFlag_Vector;			//设置存储升级标记SRAM起始地址为0x2001FFE0
+//	Ram_Info.size = 0x10;									//设置存储升级标记SRAM大小为16B
+//	Ram_Info.end_addr = Sram_UpdateFlag_Vector + Ram_Info.size - 1;
+//	Ram_Info.page_num = Ram_Info.size / Ram_Info.page_size;
 
-	//APP信息，将App程序的大小信息、CRC校验信息全部放在Appflash最后一个扇区的前8个字节，每个信息4字节
+//	//APP信息，将App程序的大小信息、CRC校验信息全部放在Appflash最后一个扇区的前8个字节，每个信息4字节
 
-	App_Info.addr_size = App_Flash_Info.start_addr + App_Flash_Info.size - 8;
-	App_Info.addr_crc = App_Flash_Info.start_addr + App_Flash_Info.size - 4;
-	App_Info.size = *((unsigned long *)(App_Info.addr_size));
-	App_Info.crc = *((unsigned long *)(App_Info.addr_crc));
-	App_Info.hwId = 0x21;
+//	App_Info.addr_size = App_Flash_Info.start_addr + App_Flash_Info.size - 8;
+//	App_Info.addr_crc = App_Flash_Info.start_addr + App_Flash_Info.size - 4;
+//	App_Info.size = *((unsigned long *)(App_Info.addr_size));
+//	App_Info.crc = *((unsigned long *)(App_Info.addr_crc));
+//	App_Info.hwId = 0x21;
 
-	//Boot信息，将bootloader程序的大小信息、CRC校验信息全部放在bootloader flash扇区的最后8个字节，每个信息4个字节
-	Boot_Info.addr_size = Boot_Flash_Info.start_addr + Boot_Flash_Info.size - 8;
-	Boot_Info.addr_crc = Boot_Flash_Info.start_addr + Boot_Flash_Info.size - 4;
-	Boot_Info.size = *((unsigned long *)(Boot_Info.addr_size));
-	Boot_Info.crc = *((unsigned long *)(Boot_Info.addr_crc));
-	Boot_Info.hwId = 0x21;
+//	//Boot信息，将bootloader程序的大小信息、CRC校验信息全部放在bootloader flash扇区的最后8个字节，每个信息4个字节
+//	Boot_Info.addr_size = Boot_Flash_Info.start_addr + Boot_Flash_Info.size - 8;
+//	Boot_Info.addr_crc = Boot_Flash_Info.start_addr + Boot_Flash_Info.size - 4;
+//	Boot_Info.size = *((unsigned long *)(Boot_Info.addr_size));
+//	Boot_Info.crc = *((unsigned long *)(Boot_Info.addr_crc));
+//	Boot_Info.hwId = 0x21;
 }
 
 
@@ -120,7 +120,6 @@ unsigned long Bootloader_GetBootCRC(void)
 
 	boot_size = Boot_Info.size;
 
-	//CRC_ResetDR();										//复位CRC计算结果
     crc_deinit();                                           // 复位CRC计算单元
 	
 	if(Boot_Info.size > Boot_Flash_Info.size)
@@ -170,7 +169,6 @@ unsigned long Bootloader_GetAppCRC(void)
 
 	app_size = App_Info.size;
 
-	//CRC_ResetDR();
     crc_deinit(); 
 	
 	if(App_Info.size > App_Flash_Info.size)
@@ -362,21 +360,21 @@ unsigned int Bootloader_GethwID(void)
 /*跳转到应用App，跳转之前先关闭已经使用的外设，注意，该函数只能在中断外执行，否则跳转后无法再进入中断*/
 void Bootloader_RunAPP(void)
 {
-	const vector_t *vector_p            = (vector_t*) App_Vector;
-	volatile uint32_t stack_arr[100]    = {0}; // Allocate some stack
-                                               // just to show that
-                                               // the SP should be reset
-                                               // before the jump - or the
-                                               // stack won't be configured
-                                               // correctly.
+//	const vector_t *vector_p            = (vector_t*) App_Vector;
+//	volatile uint32_t stack_arr[100]    = {0}; // Allocate some stack
+//                                               // just to show that
+//                                               // the SP should be reset
+//                                               // before the jump - or the
+//                                               // stack won't be configured
+//                                               // correctly.
 
-	__disable_irq();              		// 1. Disable interrupts
-    //复位所有外设
-    bsp_deinit();
-	
-    __set_MSP(vector_p->stack_addr);     	// 2. Configure stack pointer
-    SCB->VTOR = App_Vector;             	// 3. Configure VTOR
-    vector_p->func_p();                 	// 4. Jump to application
+//	__disable_irq();              		// 1. Disable interrupts
+//    //复位所有外设
+//    bsp_deinit();
+//	
+//    __set_MSP(vector_p->stack_addr);     	// 2. Configure stack pointer
+//    SCB->VTOR = App_Vector;             	// 3. Configure VTOR
+//    vector_p->func_p();                 	// 4. Jump to application
 }
 
 
