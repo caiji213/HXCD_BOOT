@@ -103,6 +103,13 @@ int main(void)
           last_tick = g_sys_tick;
 		  //modbus数据处理函数
 		  ModBus_Slave_Process();
+		  //检查跳转APP的标志
+		  if(Bootloader_Get_Jump_Flag())
+		  {
+			  Bootloader_Set_Jump_Flag(0);
+			  RunAPP_Flag = FLAG_GO_APP;
+			  Bootloader_RunAPP();
+		  }
         }
     }
 }
