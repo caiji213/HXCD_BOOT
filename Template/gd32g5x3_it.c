@@ -163,7 +163,7 @@ void SysTick_Handler(void)
     g_sys_tick++; // 增加系统滴答计数
 }
 
-/* USART0中断服务函数 */
+/* RS232_USART0中断服务函数 */
 void USART0_IRQHandler(void)
 {
     /* 空闲中断处理 */
@@ -173,7 +173,7 @@ void USART0_IRQHandler(void)
         usart_interrupt_flag_clear(RS232_COM, USART_INT_FLAG_IDLE);
 
         /* 计算接收到的数据数量 */
-        rx_count = RS232_DMA_SIZE - (dma_transfer_number_get(RS232_RX_DMA, RS232_RX_DMA_CH));
+        rs232_rx_count = RS232_DMA_SIZE - (dma_transfer_number_get(RS232_RX_DMA, RS232_RX_DMA_CH));
         rs232_idle_flag = 1;
 
         /* 禁用DMA并重新配置 */
@@ -181,6 +181,10 @@ void USART0_IRQHandler(void)
         dma_transfer_number_config(RS232_RX_DMA, RS232_RX_DMA_CH, RS232_DMA_SIZE);
         dma_flag_clear(RS232_RX_DMA, RS232_RX_DMA_CH, DMA_FLAG_FTF);
         dma_channel_enable(RS232_RX_DMA, RS232_RX_DMA_CH);
+		
+		
+		/* ========== Modbus 数据处理入口 ========== */
+        ModBus_Slave_Received_Data(rs232_rxbuffer, rs232_rx_count, CMD_FROM_RS232);
     }
     /* 发送完成中断处理 */
     if (RESET != usart_interrupt_flag_get(RS232_COM, USART_INT_FLAG_TC))
@@ -236,7 +240,7 @@ void DMA0_Channel0_IRQHandler(void)
     }
 }
 
-/* USART1中断服务函数 */
+/* RS485_USART1中断服务函数 */
 void USART1_IRQHandler(void)
 {
     /* 空闲中断处理 */
@@ -256,7 +260,7 @@ void USART1_IRQHandler(void)
         dma_channel_enable(RS485_RX_DMA, RS485_RX_DMA_CH);
 		
 		 /* ========== Modbus 数据处理入口 ========== */
-        ModBus_Slave_Received_Data(rs485_rxbuffer, rs485_rx_count, CMD_FROM_USART1);
+        ModBus_Slave_Received_Data(rs485_rxbuffer, rs485_rx_count, CMD_FROM_RS485);
     }
 
     /* 发送完成中断处理 */

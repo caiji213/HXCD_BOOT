@@ -5,8 +5,8 @@
 extern "C" {
 #endif
 
-#define CMD_FROM_USART1 0
-#define CMD_FROM_USART2 1
+#define CMD_FROM_RS485 0
+#define CMD_FROM_RS232 1
 #define CMD_FROM_USART3 2
 
 extern void ModBus_Fill_CRC16(unsigned char *buf, unsigned short len);

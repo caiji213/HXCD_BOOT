@@ -7,7 +7,7 @@
 
 #include "bsp_rs232.h"
 
-uint8_t rx_count = 0;
+uint8_t rs232_rx_count = 0;
 uint8_t tx_count = 0;
 uint8_t rs232_rxbuffer[RS232_BUFFER_SIZE];
 

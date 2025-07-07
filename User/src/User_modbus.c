@@ -52,7 +52,8 @@ void ModBus_ChangeAddr(unsigned char addr)
 void ModBus_Slave_Response_Data(unsigned char * buf, unsigned int len)
 {
 	//rs485发送一帧指令，DMA模式
-	bsp_rs485_dma_send(buf,len);
+//	bsp_rs485_dma_send(buf,len);
+//	bsp_rs232_dma_send(buf,len);
 }
  
 /* 从机发送完成，处于中断回调函数 */
@@ -93,10 +94,10 @@ void ModBus_Slave_Process(void)
 				//校验成功，判断来源
 				switch(p->cmd_from)
 				{
-					case CMD_FROM_USART1:
-						ModBus_Command_Decode(p->Slave_Received_Data,p->Slave_Received_Data_Len,ModBus_Slave_Response_Data);
+					case CMD_FROM_RS485:
+						ModBus_Command_Decode(p->Slave_Received_Data,p->Slave_Received_Data_Len,bsp_rs485_dma_send);
 						break;
-					case CMD_FROM_USART2:
+					case CMD_FROM_RS232:
 						ModBus_Command_Decode(p->Slave_Received_Data,p->Slave_Received_Data_Len,bsp_rs232_dma_send);
 						break;
 					default:
