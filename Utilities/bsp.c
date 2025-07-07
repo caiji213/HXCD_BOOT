@@ -17,14 +17,13 @@ void bsp_deinit(void)
     i2c_deinit_all();       // 复位所有 I2C 总线
 }
 
-void bsp_init(unsigned int baudrate)
+void bsp_init()
 {
-    bsp_i2c_init();              // I2C初始化
-	bsp_rs232_init();
-	bsp_rs485_init(baudrate, PTY_NONE, DMA_ENABLE);
-	
-	nvic_config();              // 中断配置,有需删除的
-	__enable_irq();             // 开中断
+	bsp_rs232_init(115200, PTY_NONE, DMA_ENABLE);
+	bsp_rs485_init(115200, PTY_NONE, DMA_ENABLE);
+	bsp_i2c_init();              // I2C初始化
+	nvic_config();               // 中断配置
+	__enable_irq();              // 开中断 
 }	
 
 void nvic_config(void)

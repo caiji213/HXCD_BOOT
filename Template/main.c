@@ -56,7 +56,11 @@ int main(void)
 	}
 	else
 	{
-	     bsp_init(115200);   
+	     bsp_rs232_init(115200, PTY_NONE, DMA_ENABLE);
+	     bsp_rs485_init(115200, PTY_NONE, DMA_ENABLE);
+		 bsp_i2c_init();                  // I2C初始化
+	     nvic_config();                   // 中断配置
+	     __enable_irq();                  // 开中断 
 	     ModBus_Init(1);      
 	}
 

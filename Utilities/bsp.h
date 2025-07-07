@@ -22,7 +22,7 @@
 
 void bsp_deinit(void);
 void nvic_config(void);
-void bsp_init(unsigned int baudrate);
+void bsp_init();
 
 #ifdef __cplusplus
 }

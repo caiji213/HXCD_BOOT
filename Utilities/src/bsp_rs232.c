@@ -14,7 +14,7 @@ uint8_t rs232_rxbuffer[RS232_BUFFER_SIZE];
 __IO FlagStatus rs232_idle_flag = RESET; // 初始：无空闲中断
 __IO FlagStatus rs232_tx_flag = SET;     // 初始：USART可发送
 
-void bsp_rs232_init(void)
+void bsp_rs232_init(uint32_t Baudrate, uint16_t parity_bit, uint8_t DMA_enable)
 {
     /* 启用GPIO时钟 */
     rcu_periph_clock_enable(RS232_GPIO_CLK);
@@ -36,8 +36,17 @@ void bsp_rs232_init(void)
     gpio_output_options_set(RS232_GPIO_PORT, GPIO_OTYPE_PP, GPIO_OSPEED_100_220MHZ, RS232_RX_PIN);
 
     /* USART串口参数配置 */
-    usart_deinit(RS232_COM);                                 // 复位串口外设
-    usart_baudrate_set(RS232_COM, 115200U);                  // 设置波特率115200
+    usart_deinit(RS232_COM);                 // 复位串口外设
+    usart_baudrate_set(RS232_COM, Baudrate); // 设置波特率
+
+    // 校验位配置
+    if (parity_bit == PTY_NONE)
+        usart_parity_config(RS232_COM, USART_PM_NONE);
+    else if (parity_bit == PTY_ODD)
+        usart_parity_config(RS232_COM, USART_PM_ODD);
+    else if (parity_bit == PTY_EVEN)
+        usart_parity_config(RS232_COM, USART_PM_EVEN);
+
     usart_receive_config(RS232_COM, USART_RECEIVE_ENABLE);   // 使能接收器
     usart_transmit_config(RS232_COM, USART_TRANSMIT_ENABLE); // 使能发送器
 
@@ -45,10 +54,11 @@ void bsp_rs232_init(void)
     usart_interrupt_enable(RS232_COM, USART_INT_IDLE);
     /* 使能USART发送完成中断 */
     usart_interrupt_enable(RS232_COM, USART_INT_TC);
-
-    /* 初始化DMA */
-    bsp_rs232_dma_init();
-
+    if (DMA_enable)
+    {
+        /* 初始化DMA */
+        bsp_rs232_dma_init();
+    }
     /* 使能USART外设 */
     usart_enable(RS232_COM);
 }

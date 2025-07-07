@@ -39,8 +39,7 @@ void bsp_rs485_init(uint32_t Baudrate, uint16_t parity_bit, uint8_t DMA_enable)
     /* USART配置 */
     usart_deinit(RS485_COM);
     usart_baudrate_set(RS485_COM, Baudrate);
-    usart_receive_config(RS485_COM, USART_RECEIVE_ENABLE);
-    usart_transmit_config(RS485_COM, USART_TRANSMIT_ENABLE);
+
 	// 校验位配置
 	if(parity_bit == PTY_NONE)
 		usart_parity_config(RS485_COM,USART_PM_NONE);
@@ -49,7 +48,9 @@ void bsp_rs485_init(uint32_t Baudrate, uint16_t parity_bit, uint8_t DMA_enable)
 	else if(parity_bit == PTY_EVEN)
 		usart_parity_config(RS485_COM,USART_PM_EVEN);
 	
-  
+    usart_receive_config(RS485_COM, USART_RECEIVE_ENABLE);
+    usart_transmit_config(RS485_COM, USART_TRANSMIT_ENABLE);
+    
     /* 使能USART空闲中断 */
     usart_interrupt_enable(RS485_COM, USART_INT_IDLE);
     /* 使能USART发送完成中断 */

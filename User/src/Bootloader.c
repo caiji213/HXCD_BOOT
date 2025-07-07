@@ -300,6 +300,7 @@ int Bootloader_ProgramBlock(unsigned char *buf, uint32_t address, uint32_t size)
         status = fmc_doubleword_program(address + i * 8, data_ptr[i]);
         if (status != FMC_READY)
         {
+			// 重新锁定Flash
             fmc_lock();
 			__enable_irq(); //开中断
             return 3;

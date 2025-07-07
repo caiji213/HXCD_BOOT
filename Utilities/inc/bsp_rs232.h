@@ -41,6 +41,13 @@
 #define RS232_RX_DMA_CH                  DMA_CH1  
 #define RS232_RX_DMA_IRQn                DMA0_Channel1_IRQn
 
+#define PTY_NONE			             0
+#define PTY_ODD					         1
+#define PTY_EVEN				         2
+
+#define DMA_ENABLE				          1
+#define DMA_DISENABLE			          0
+
 /* 全局变量定义 */
 extern uint8_t rx_count;                             // 接收数据计数器
 extern uint8_t tx_count;                             // 发送数据计数器
@@ -49,9 +56,10 @@ extern __IO FlagStatus rs232_idle_flag;              // USART总线空闲标志
 extern __IO FlagStatus rs232_tx_flag;                // UART发送完成标志
 
 /* 函数声明  */
-void bsp_rs232_init(void);
+void bsp_rs232_init(uint32_t Baudrate, uint16_t parity_bit, uint8_t DMA_enable);
 void bsp_rs232_dma_init(void);
 void bsp_rs232_dma_send(uint8_t *buffer, uint32_t length);
+
 
 #ifdef __cplusplus
 }
