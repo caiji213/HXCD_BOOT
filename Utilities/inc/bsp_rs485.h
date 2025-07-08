@@ -15,7 +15,7 @@
 #include "gd32g5x3.h"
 #include "gd32g5x3_libopt.h"
 
-#define RS485_BUFFER_SIZE               256
+#define RS485_BUFFER_SIZE               4096
 #define RS485_DMA_SIZE                  RS485_BUFFER_SIZE + 1
 
 /* USART1定义 */
