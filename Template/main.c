@@ -18,7 +18,7 @@
 #include "Bootloader_Check_Force.h"
 #include "User_modbus_command_decode.h"
 
-char str_DeviceInfo[64] = "ARM_Boot ";
+char str_DeviceInfo[64] = "ARM_Boot";
 uint8_t buf[2]={0,0};
 
 #define ARRAYNUM(arr_nanme) (uint32_t)(sizeof(arr_nanme) / sizeof(*(arr_nanme)))
@@ -38,11 +38,12 @@ int main(void)
 	// 初始化
     systick_config();    // 滴答定时器初始化
 	Bootloader_Hal_Init(); 
-
+	//强制进入App，用于参数初始化重启
+	  // Bootloader_RunAPP();
 	if(RunAPP_Flag == FLAG_RUNAPP_FORCE)
 	{
 		//强制进入App，用于参数初始化重启
-//		Bootloader_RunAPP();
+	   Bootloader_RunAPP();
 	}
 	else if(RunAPP_Flag == FLAG_RUNBOOT)
 	{
@@ -62,6 +63,7 @@ int main(void)
 	     nvic_config();                   // 中断配置
 	     __enable_irq();                  // 开中断 
 	     ModBus_Init(1);      
+		 printf("[Flash] bsp_rs232_init,bsp_rs485_init\r\n");
 	}
 
 //	if(DoNotCheckTxRxShort)

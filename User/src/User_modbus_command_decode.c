@@ -70,34 +70,70 @@ void ModBus_Command_Decode_Upgrade_Info(unsigned char * buf, unsigned int len, v
 }
 
 //编程Flash
+//void ModBus_Command_Decode_Program_Flash(unsigned char * buf, unsigned int len, void (*Feedback)(unsigned char * buf, unsigned int len))
+//{
+//	unsigned int addr,size;
+//	int ret=0;
+//	addr = BigEndianBytesArray_To_Uint32(buf+2);
+//	size = BigEndianBytesArray_To_Uint16(buf+6);
+
+//	//解密数据
+//	Decrypt_Block_Data((unsigned long *)(buf + 8),size/4);
+
+//	//开始烧录
+//	#ifndef DEBUG_COMMAND_DECODE_USE_EXTERNAL_RAM
+//	ret = Bootloader_ProgramBlock(buf+8,addr,size);
+//	#else
+//	ret = ProgramBlock_to_Ram(buf+8,addr,size);
+//	#endif
+//	if (ret)
+//	{
+//		//烧录出错,反馈烧录了0字节
+//		Uint16_To_BigEndianBytesArray(buf+6, 0);
+//	}
+
+//	len = 10;
+//	ModBus_Fill_CRC16(buf,len);
+//	Feedback(buf,len);
+//}
+
 void ModBus_Command_Decode_Program_Flash(unsigned char * buf, unsigned int len, void (*Feedback)(unsigned char * buf, unsigned int len))
 {
-	unsigned int addr,size;
-	int ret=0;
-	addr = BigEndianBytesArray_To_Uint32(buf+2);
-	size = BigEndianBytesArray_To_Uint16(buf+6);
+    unsigned int addr, size;
+    int ret = 0;
+    addr = BigEndianBytesArray_To_Uint32(buf+2);
+    size = BigEndianBytesArray_To_Uint16(buf+6);
+    
+    // 地址转换（逻辑地址→物理地址）
+    uint32_t physical_addr = APP_START_ADDR + addr;
+    
+    // 确保地址8字节对齐
+    if (physical_addr % 8 != 0) {
+        physical_addr = physical_addr & ~0x7; // 向下对齐到8字节边界
+    }
+    
+    // 解密数据
+    Decrypt_Block_Data((unsigned long *)(buf + 8), size/4);
 
-	//解密数据
-	Decrypt_Block_Data((unsigned long *)(buf + 8),size/4);
+    // 开始烧录
+    #ifndef DEBUG_COMMAND_DECODE_USE_EXTERNAL_RAM
+    ret = Bootloader_ProgramBlock(buf+8, physical_addr, size);
+    #else
+    ret = ProgramBlock_to_Ram(buf+8, physical_addr, size);
+    #endif
+    
+    if (ret) {
+        // 烧录出错,反馈烧录了0字节
+        Uint16_To_BigEndianBytesArray(buf+6, 0);
+    } else {
+        // 成功则更新响应中的地址为物理地址
+        Uint32_To_BigEndianBytesArray(buf+2, physical_addr);
+    }
 
-	//开始烧录
-	#ifndef DEBUG_COMMAND_DECODE_USE_EXTERNAL_RAM
-	ret = Bootloader_ProgramBlock(buf+8,addr,size);
-	#else
-	ret = ProgramBlock_to_Ram(buf+8,addr,size);
-	#endif
-	if (ret)
-	{
-		//烧录出错,反馈烧录了0字节
-		Uint16_To_BigEndianBytesArray(buf+6, 0);
-	}
-
-	len = 10;
-	ModBus_Fill_CRC16(buf,len);
-	Feedback(buf,len);
+    len = 10;
+    ModBus_Fill_CRC16(buf, len);
+    Feedback(buf, len);
 }
-
-
 //modbus总线读取App程序长度
 void ModBus_Command_Decode_General_Func_Read_App_Length(unsigned char * buf, unsigned int len, void (*Feedback)(unsigned char * buf, unsigned int len))
 {

@@ -180,12 +180,17 @@
           <WinNumber>1</WinNumber>
           <ItemText>rs232_rxbuffer</ItemText>
         </Ww>
+        <Ww>
+          <count>4</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>APP_START_ADDR</ItemText>
+        </Ww>
       </WatchWindow1>
       <MemoryWindow1>
         <Mm>
           <WinNumber>1</WinNumber>
           <SubType>0</SubType>
-          <ItemText>0x08008400</ItemText>
+          <ItemText>0X0800dd00</ItemText>
           <AccSizeX>0</AccSizeX>
         </Mm>
       </MemoryWindow1>

@@ -1,7 +1,7 @@
 #include "bsp.h"
 #include "Bootloader.h"
 #include "gd32g5x3_fmc.h"
-
+#include <stdio.h>
 // 全局变量定义
 Memory_Info App_Flash_Info;
 Memory_Info Boot_Flash_Info;
@@ -77,7 +77,7 @@ static void configure_flash_waitstates(void)
 void Bootloader_Hal_Init(void)
 {
     // 配置216MHz等待状态
-    configure_flash_waitstates();
+   // configure_flash_waitstates();
 
     // Bootloader Flash信息
     Boot_Flash_Info.page_size = FLASH_PAGE_SIZE;
@@ -108,8 +108,8 @@ void Bootloader_Hal_Init(void)
     App_Info.hwId = Bootloader_GethwID();
 
     // Boot信息
-    Boot_Info.addr_size = BOOT_END_ADDR - 7;
-    Boot_Info.addr_crc = BOOT_END_ADDR - 3;
+    Boot_Info.addr_size = BOOT_END_ADDR - 8;
+    Boot_Info.addr_crc = BOOT_END_ADDR - 4;
     Boot_Info.size = *((uint32_t *)(Boot_Info.addr_size));
     Boot_Info.crc = *((uint32_t *)(Boot_Info.addr_crc));
     Boot_Info.hwId = Bootloader_GethwID();
@@ -275,45 +275,92 @@ int Bootloader_EraseAllFlash(void)
     return (status == FMC_READY) ? 0 : 1;
 }
 
-/*
-* 双字节烧录
-*/
+///*
+//* 双字节烧录
+//*/
+//int Bootloader_ProgramBlock(unsigned char *buf, uint32_t address, uint32_t size)
+//{
+//    // 确保地址在APP区域
+//    if (address < APP_START_ADDR || address > APP_END_ADDR)
+//        return 1;
+
+//    // 确保大小是8的倍数 (双字对齐)
+//    if (size % 8 != 0)
+//        return 2;
+
+//    uint32_t words = size / 8;
+//    uint64_t *data_ptr = (uint64_t *)buf;
+//    fmc_state_enum status;
+//	
+//    __disable_irq(); //关中断
+//    // 解锁Flash
+//    fmc_unlock();
+
+//    for (uint32_t i = 0; i < words; i++)
+//    {
+//        status = fmc_doubleword_program(address + i * 8, data_ptr[i]);
+//        if (status != FMC_READY)
+//        {
+//			// 重新锁定Flash
+//            fmc_lock();
+//			__enable_irq(); //开中断
+//            return 3;
+//        }
+//    }
+
+//    // 重新锁定Flash
+//    fmc_lock();
+//	__enable_irq(); //开中断
+//    return 0;
+//}
 int Bootloader_ProgramBlock(unsigned char *buf, uint32_t address, uint32_t size)
 {
-    // 确保地址在APP区域
-    if (address < APP_START_ADDR || address > APP_END_ADDR)
+    printf("[Flash] Starting programming operation, Address: 0x%08X, Size: %u bytes\r\n", address, size);
+    
+    // 验证地址在APP区域内
+    if (address < APP_START_ADDR || address > APP_END_ADDR) {
+        printf("[Flash] Error: Address 0x%08X out of APP range (0x%08X-0x%08X)\r\n", 
+               address, APP_START_ADDR, APP_END_ADDR);
         return 1;
+    }
 
-    // 确保大小是8的倍数 (双字对齐)
-    if (size % 8 != 0)
-        return 2;
+    // 验证大小是8的倍数（双字对齐）
+//    if (size % 8 != 0) {
+//        printf("[Flash] Error: Data size %u not multiple of 8 (requires double-word alignment)\r\n", size);
+//        return 2;
+//    }
 
-    uint32_t words = size / 8;
+    // 关键修改：使用双字编程
+    uint32_t double_words = size / 8;
     uint64_t *data_ptr = (uint64_t *)buf;
     fmc_state_enum status;
-	
-    __disable_irq(); //关中断
-    // 解锁Flash
-    fmc_unlock();
+    
+    printf("[Flash] Preparing to program %u double-words\r\n", double_words);
+    __disable_irq(); // 禁用中断
+    fmc_unlock();    // 解锁Flash
 
-    for (uint32_t i = 0; i < words; i++)
+    for (uint32_t i = 0; i < double_words; i++)
     {
-        status = fmc_doubleword_program(address + i * 8, data_ptr[i]);
+        uint32_t current_addr = address + i * 8;
+        
+        // 关键修改：使用双字编程函数
+        status = fmc_doubleword_program(current_addr, data_ptr[i]);
+        
         if (status != FMC_READY)
         {
-			// 重新锁定Flash
+            printf("[Flash] Error: Programming failed at 0x%08X, status: %d\r\n", current_addr, status);
             fmc_lock();
-			__enable_irq(); //开中断
+            __enable_irq();
             return 3;
         }
     }
 
-    // 重新锁定Flash
-    fmc_lock();
-	__enable_irq(); //开中断
+    fmc_lock();     // 锁定Flash
+    __enable_irq(); // 恢复中断
+    
+    printf("[Flash] Programming completed successfully\r\n");
     return 0;
 }
-
 int Bootloader_Write_App_CRC(uint32_t crc)
 {
     uint64_t combined = ((uint64_t)crc << 32) | App_Info.size;
