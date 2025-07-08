@@ -43,8 +43,8 @@
 #define RS485_TX_DMA_IRQn                DMA0_Channel3_IRQn
 
 /* 全局变量 */
-extern uint8_t rs485_rx_count;
-extern uint8_t rs485_rxbuffer[RS485_BUFFER_SIZE];
+extern uint32_t rs485_rx_count;
+extern uint32_t rs485_rxbuffer[RS485_BUFFER_SIZE];
 extern __IO FlagStatus rs485_idle_flag;
 extern __IO FlagStatus rs485_tx_flag;
 

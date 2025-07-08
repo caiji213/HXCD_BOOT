@@ -125,10 +125,11 @@ void ModBus_Command_Decode_Program_Flash(unsigned char * buf, unsigned int len, 
     if (ret) {
         // 烧录出错,反馈烧录了0字节
         Uint16_To_BigEndianBytesArray(buf+6, 0);
-    } else {
-        // 成功则更新响应中的地址为物理地址
-        Uint32_To_BigEndianBytesArray(buf+2, physical_addr);
-    }
+		} 
+//    else {
+//        // 成功则更新响应中的地址为物理地址
+//        Uint32_To_BigEndianBytesArray(buf+2, physical_addr);
+//    }
 
     len = 10;
     ModBus_Fill_CRC16(buf, len);

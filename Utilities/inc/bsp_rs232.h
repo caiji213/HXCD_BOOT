@@ -49,8 +49,8 @@
 #define DMA_DISENABLE			          0
 
 /* 全局变量定义 */
-extern uint8_t rs232_rx_count;                             // 接收数据计数器
-extern uint8_t tx_count;                             // 发送数据计数器
+extern uint32_t rs232_rx_count;                             // 接收数据计数器
+extern uint32_t tx_count;                             // 发送数据计数器
 extern uint8_t rs232_rxbuffer[RS232_BUFFER_SIZE];    // 接收缓冲区
 extern __IO FlagStatus rs232_idle_flag;              // USART总线空闲标志
 extern __IO FlagStatus rs232_tx_flag;                // UART发送完成标志

@@ -104,9 +104,11 @@ int main(void)
 	
     while (1)
     {
-		if ((g_sys_tick - last_tick) >= 1)
-        {
-          last_tick = g_sys_tick;
+//		if ((g_sys_tick - last_tick) >= 1)
+//        {
+//           last_tick = g_sys_tick;
+//        }
+		          
 		  //modbus数据处理函数
 		  ModBus_Slave_Process();
 		  //检查跳转APP的标志
@@ -116,7 +118,6 @@ int main(void)
 			  RunAPP_Flag = FLAG_GO_APP;
 			  Bootloader_RunAPP();
 		  }
-        }
     }
 }
 

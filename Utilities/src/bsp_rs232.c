@@ -7,8 +7,8 @@
 
 #include "bsp_rs232.h"
 
-uint8_t rs232_rx_count = 0;
-uint8_t tx_count = 0;
+uint32_t rs232_rx_count = 0;
+uint32_t tx_count = 0;
 uint8_t rs232_rxbuffer[RS232_BUFFER_SIZE];
 
 __IO FlagStatus rs232_idle_flag = RESET; // 初始：无空闲中断
