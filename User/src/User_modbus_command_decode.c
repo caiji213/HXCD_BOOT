@@ -3,6 +3,7 @@
 #include "Decrypt_Block_Data.h"
 #include "Bootloader.h"
 #include "User_modbus.h"
+#include <stdio.h>
 
 #define ModBus_FUNCODE_Read_Holding_Registers  0x03 //读保持寄存器
 #define MODBUS_FUNCODE_UPGRADE_INFO  0x41
@@ -97,6 +98,50 @@ void ModBus_Command_Decode_Upgrade_Info(unsigned char * buf, unsigned int len, v
 //	Feedback(buf,len);
 //}
 
+//void ModBus_Command_Decode_Program_Flash(unsigned char * buf, unsigned int len, void (*Feedback)(unsigned char * buf, unsigned int len))
+//{
+//    unsigned int addr, size;
+//    int ret = 0;
+//    addr = BigEndianBytesArray_To_Uint32(buf+2);
+//    size = BigEndianBytesArray_To_Uint16(buf+6);
+//    
+//    // 地址转换（逻辑地址→物理地址）
+//    uint32_t physical_addr = APP_START_ADDR + addr;
+//    
+//    // 确保地址8字节对齐
+//    if (physical_addr % 8 != 0) {
+//        physical_addr = physical_addr & ~0x7; // 向下对齐到8字节边界
+//    }
+//    
+//    // 解密数据
+//    Decrypt_Block_Data((unsigned long *)(buf + 8), size/4);
+//    printf("Decrypted %d bytes:\n", size);
+//    for(int i=0; i<size; i++) {
+//        printf("%02X ", buf[8+i]);
+//        if((i+1)%16 == 0) printf("\n");
+//    }
+//    printf("\n");
+//    // 开始烧录
+//    #ifndef DEBUG_COMMAND_DECODE_USE_EXTERNAL_RAM
+//    ret = Bootloader_ProgramBlock(buf+8, physical_addr, size);
+//    #else
+//    ret = ProgramBlock_to_Ram(buf+8, physical_addr, size);
+//    #endif
+//    
+//    if (ret) {
+//        // 烧录出错,反馈烧录了0字节
+//        Uint16_To_BigEndianBytesArray(buf+6, 0);
+//		} 
+//    else {
+//        // 成功则更新响应中的地址为物理地址
+//        Uint32_To_BigEndianBytesArray(buf+2, physical_addr);
+//    }
+
+//    len = 10;
+//    ModBus_Fill_CRC16(buf, len);
+//    Feedback(buf, len);
+//}
+
 void ModBus_Command_Decode_Program_Flash(unsigned char * buf, unsigned int len, void (*Feedback)(unsigned char * buf, unsigned int len))
 {
     unsigned int addr, size;
@@ -104,32 +149,36 @@ void ModBus_Command_Decode_Program_Flash(unsigned char * buf, unsigned int len, 
     addr = BigEndianBytesArray_To_Uint32(buf+2);
     size = BigEndianBytesArray_To_Uint16(buf+6);
     
-    // 地址转换（逻辑地址→物理地址）
+    // 物理地址计算（修复对齐逻辑）
     uint32_t physical_addr = APP_START_ADDR + addr;
+    uint32_t padding = 0;
     
-    // 确保地址8字节对齐
+    // 计算需要的填充字节
     if (physical_addr % 8 != 0) {
-        physical_addr = physical_addr & ~0x7; // 向下对齐到8字节边界
+        padding = 8 - (physical_addr % 8);
+        physical_addr = (physical_addr + 7) & ~0x7; // 向上对齐到8字节边界
     }
-    
-    // 解密数据
-    Decrypt_Block_Data((unsigned long *)(buf + 8), size/4);
 
-    // 开始烧录
-    #ifndef DEBUG_COMMAND_DECODE_USE_EXTERNAL_RAM
-    ret = Bootloader_ProgramBlock(buf+8, physical_addr, size);
-    #else
-    ret = ProgramBlock_to_Ram(buf+8, physical_addr, size);
-    #endif
-    
-    if (ret) {
-        // 烧录出错,反馈烧录了0字节
-        Uint16_To_BigEndianBytesArray(buf+6, 0);
-		} 
-//    else {
-//        // 成功则更新响应中的地址为物理地址
-//        Uint32_To_BigEndianBytesArray(buf+2, physical_addr);
-//    }
+    // 实际需要解密的数据偏移量
+    unsigned char* data_start = buf + 8 + padding;
+    unsigned int real_size = size - padding;
+
+    // 解密数据（只处理对齐后的数据）
+    if (real_size > 0) {
+        printf("Decrypting %d bytes (padding: %d)\n", real_size, padding);
+        Decrypt_Block_Data((unsigned long *)data_start, real_size/4);
+        ret = Bootloader_ProgramBlock(data_start, physical_addr, real_size);
+    }
+    // 解密数据
+    //Decrypt_Block_Data((unsigned long *)(buf + 8), size/4);
+    printf("Decrypted %d bytes:\n", size);
+    for(int i=0; i<size; i++) {
+        printf("%02X ", buf[8+i]);
+        if((i+1)%16 == 0) printf("\n");
+    }
+    // 设置响应中的烧录字节数
+    Uint16_To_BigEndianBytesArray(buf+6, (ret == 0) ? real_size : 0);
+    Uint32_To_BigEndianBytesArray(buf+2, physical_addr);
 
     len = 10;
     ModBus_Fill_CRC16(buf, len);
@@ -246,51 +295,118 @@ void ModBus_Command_Decode_General_Func_Erase_App(unsigned char * buf, unsigned 
 
 
 //指令解码通用函数
+//void ModBus_Command_Decode_General_Func(unsigned char * buf, unsigned int len, void (*Feedback)(unsigned char * buf, unsigned int len))
+//{
+//	unsigned short funcode;
+//	funcode = BigEndianBytesArray_To_Uint16(buf + 2);
+//	switch (funcode)
+//	{
+//		case UPGRADE_OP_CODE_READ_APP_LENGTH:
+//			ModBus_Command_Decode_General_Func_Read_App_Length(buf,len,Feedback);
+//			break;
+//		case UPGRADE_OP_CODE_WRITE_APP_LENGTH:
+//			ModBus_Command_Decode_General_Func_Write_App_Length(buf,len,Feedback);
+//			break;
+//		case UPGRADE_OP_CODE_READ_HW_ID:
+//			ModBus_Command_Decode_General_Func_Read_HW_ID(buf,len,Feedback);
+//			break;
+//		case UPGRADE_OP_CODE_WRITE_HW_ID:
+//			ModBus_Command_Decode_General_Func_Write_HW_ID(buf,len,Feedback);
+//			break;
+//		case UPGRADE_OP_CODE_APP_CHECKSUM:
+//			ModBus_Command_Decode_General_Func_App_Checksum(buf,len,Feedback);
+//			break;
+//		case UPGRADE_OP_CODE_CHECK_UPGRADE:
+//			ModBus_Command_Decode_General_Func_Check_Upgrade(buf,len,Feedback);
+//			break;
+//		case UPGRADE_OP_CODE_READ_STORED_CRC:
+//			ModBus_Command_Decode_General_Func_Read_Stored_CRC(buf,len,Feedback);
+//			break;
+//		case UPGRADE_OP_CODE_WRITE_STORED_CRC:
+//			ModBus_Command_Decode_General_Func_Write_Stored_CRC(buf,len,Feedback);
+//			break;
+//		case UPGRADE_OP_CODE_ERASE_APP:
+//			ModBus_Command_Decode_General_Func_Erase_App(buf,len,Feedback);
+//			break;
+//		case UPGRADE_OP_CODE_JUMP_TO_APP:
+//			Bootloader_Set_Jump_Flag(1);
+//			break;
+//		case UPGRADE_OP_CODE_JUMP_TO_BOOT:
+//			Feedback(buf,len); //已经在Boot中，直接原数据回复
+//			break;
+//		default :
+//			ModBus_Command_Decode_Feedback_Error(1, buf, len, Feedback);
+//			break;
+//	}
+//}
+
 void ModBus_Command_Decode_General_Func(unsigned char * buf, unsigned int len, void (*Feedback)(unsigned char * buf, unsigned int len))
 {
-	unsigned short funcode;
-	funcode = BigEndianBytesArray_To_Uint16(buf + 2);
-	switch (funcode)
-	{
-		case UPGRADE_OP_CODE_READ_APP_LENGTH:
-			ModBus_Command_Decode_General_Func_Read_App_Length(buf,len,Feedback);
-			break;
-		case UPGRADE_OP_CODE_WRITE_APP_LENGTH:
-			ModBus_Command_Decode_General_Func_Write_App_Length(buf,len,Feedback);
-			break;
-		case UPGRADE_OP_CODE_READ_HW_ID:
-			ModBus_Command_Decode_General_Func_Read_HW_ID(buf,len,Feedback);
-			break;
-		case UPGRADE_OP_CODE_WRITE_HW_ID:
-			ModBus_Command_Decode_General_Func_Write_HW_ID(buf,len,Feedback);
-			break;
-		case UPGRADE_OP_CODE_APP_CHECKSUM:
-			ModBus_Command_Decode_General_Func_App_Checksum(buf,len,Feedback);
-			break;
-		case UPGRADE_OP_CODE_CHECK_UPGRADE:
-			ModBus_Command_Decode_General_Func_Check_Upgrade(buf,len,Feedback);
-			break;
-		case UPGRADE_OP_CODE_READ_STORED_CRC:
-			ModBus_Command_Decode_General_Func_Read_Stored_CRC(buf,len,Feedback);
-			break;
-		case UPGRADE_OP_CODE_WRITE_STORED_CRC:
-			ModBus_Command_Decode_General_Func_Write_Stored_CRC(buf,len,Feedback);
-			break;
-		case UPGRADE_OP_CODE_ERASE_APP:
-			ModBus_Command_Decode_General_Func_Erase_App(buf,len,Feedback);
-			break;
-		case UPGRADE_OP_CODE_JUMP_TO_APP:
-			Bootloader_Set_Jump_Flag(1);
-			break;
-		case UPGRADE_OP_CODE_JUMP_TO_BOOT:
-			Feedback(buf,len); //已经在Boot中，直接原数据回复
-			break;
-		default :
-			ModBus_Command_Decode_Feedback_Error(1, buf, len, Feedback);
-			break;
-	}
-}
+    printf("Enter ModBus_Command_Decode_General_Func\n"); // 函数入口
+    printf("Input Buffer (len=%d): ", len);
+    for(int i=0; i < (len < 8 ? len : 8); i++) { // 安全打印前8字节
+        printf("%02X ", buf[i]); 
+    }
+    printf("\n");
 
+    unsigned short funcode;
+    funcode = BigEndianBytesArray_To_Uint16(buf + 2);
+    printf("Funcode = 0x%04X\n", funcode); // 打印功能码
+
+    switch (funcode)
+    {
+        case UPGRADE_OP_CODE_READ_APP_LENGTH:
+            printf("Processing: READ_APP_LENGTH\n");
+            ModBus_Command_Decode_General_Func_Read_App_Length(buf,len,Feedback);
+            break;
+        case UPGRADE_OP_CODE_WRITE_APP_LENGTH:
+            printf("Processing: WRITE_APP_LENGTH\n");
+            ModBus_Command_Decode_General_Func_Write_App_Length(buf,len,Feedback);
+            break;
+        case UPGRADE_OP_CODE_READ_HW_ID:
+            printf("Processing: READ_HW_ID\n");
+            ModBus_Command_Decode_General_Func_Read_HW_ID(buf,len,Feedback);
+            break;
+        case UPGRADE_OP_CODE_WRITE_HW_ID:
+            printf("Processing: WRITE_HW_ID\n");
+            ModBus_Command_Decode_General_Func_Write_HW_ID(buf,len,Feedback);
+            break;
+        case UPGRADE_OP_CODE_APP_CHECKSUM:
+            printf("Processing: APP_CHECKSUM\n");
+            ModBus_Command_Decode_General_Func_App_Checksum(buf,len,Feedback);
+            break;
+        case UPGRADE_OP_CODE_CHECK_UPGRADE:
+            printf("Processing: CHECK_UPGRADE\n");
+            ModBus_Command_Decode_General_Func_Check_Upgrade(buf,len,Feedback);
+            break;
+        case UPGRADE_OP_CODE_READ_STORED_CRC:
+            printf("Processing: READ_STORED_CRC\n");
+            ModBus_Command_Decode_General_Func_Read_Stored_CRC(buf,len,Feedback);
+            break;
+        case UPGRADE_OP_CODE_WRITE_STORED_CRC:
+            printf("Processing: WRITE_STORED_CRC\n");
+            ModBus_Command_Decode_General_Func_Write_Stored_CRC(buf,len,Feedback);
+            break;
+        case UPGRADE_OP_CODE_ERASE_APP:
+            printf("Processing: ERASE_APP\n");
+            ModBus_Command_Decode_General_Func_Erase_App(buf,len,Feedback);
+            break;
+        case UPGRADE_OP_CODE_JUMP_TO_APP:
+            printf("Processing: JUMP_TO_APP (Set Jump Flag)\n");
+            Bootloader_Set_Jump_Flag(1);
+            break;
+        case UPGRADE_OP_CODE_JUMP_TO_BOOT:
+            printf("Processing: JUMP_TO_BOOT (Direct Feedback)\n");
+            Feedback(buf,len); //已经在Boot中，直接原数据回复
+            break;
+        default :
+            printf("Unknown Funcode: 0x%04X! Sending Error\n", funcode);
+            ModBus_Command_Decode_Feedback_Error(1, buf, len, Feedback);
+            break;
+    }
+    
+    printf("Exit ModBus_Command_Decode_General_Func\n\n"); // 函数退出
+}
 #define ADDR_DeviceType 2500
 
 extern char str_DeviceInfo[];

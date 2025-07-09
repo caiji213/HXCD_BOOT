@@ -133,7 +133,7 @@ uint32_t Bootloader_GetBootCRC(void)
 {
     uint32_t boot_size = Boot_Info.size;
 
-    crc_deinit(); // 复位CRC
+    crc_data_register_reset(); // 复位数据寄存器
 
     if (boot_size > Boot_Flash_Info.size)
         return 0;
@@ -162,7 +162,7 @@ uint32_t Bootloader_GetAppCRC(void)
 {
     uint32_t app_size = App_Info.size;
 
-    crc_deinit(); // 复位CRC
+    crc_data_register_reset(); // 复位数据寄存器
 
     if (app_size > App_Flash_Info.size)
         return 0;
@@ -410,8 +410,13 @@ int Bootloader_Write_App_Size(uint32_t size)
 
 void Bootloader_RunAPP(void)
 {
-    const vector_t *vector_p = (vector_t *)App_Flash_Info.start_addr;
-
+    const vector_t *vector_p = (vector_t *)APP_START_ADDR;
+	volatile uint32_t stack_arr[100]    = {0}; // Allocate some stack
+                                               // just to show that
+                                               // the SP should be reset
+                                               // before the jump - or the
+                                               // stack won't be configured
+                                               // correctly.
     __disable_irq(); // 关闭所有中断
 
     // 重置所有外设到默认状态
@@ -420,14 +425,14 @@ void Bootloader_RunAPP(void)
 		
     // 配置堆栈指针和向量表
     __set_MSP(vector_p->stack_addr);
-    SCB->VTOR = App_Flash_Info.start_addr;
+    SCB->VTOR = APP_START_ADDR;
 
     // 跳转到应用
     vector_p->func_p();
 
-    // 理论上不会执行到这里
-    while (1)
-        ;
+//    // 理论上不会执行到这里
+//    while (1)
+//        ;
 }
 
 

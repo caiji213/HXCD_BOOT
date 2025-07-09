@@ -79,3 +79,8 @@ void i2c_deinit_all(void)
     i2c_deinit(I2C2);
 	i2c_deinit(I2C3); 
 }
+
+void ccr_deinit_all(void)
+{
+    crc_deinit();
+}

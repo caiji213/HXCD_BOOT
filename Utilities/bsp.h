@@ -23,6 +23,7 @@
 void bsp_deinit(void);
 void nvic_config(void);
 void bsp_init();
+void bsp_crc_init();
 
 #ifdef __cplusplus
 }

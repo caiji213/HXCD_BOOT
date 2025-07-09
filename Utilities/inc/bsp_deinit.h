@@ -18,6 +18,7 @@ void uart_deinit_all(void);
 void gpio_deinit_all(void);
 void timer_deinit_all(void);
 void i2c_deinit_all(void);
+void ccr_deinit_all(void);
 
 #ifdef __cplusplus
 }
