@@ -69,8 +69,6 @@ void ModBus_Command_Decode_Upgrade_Info(unsigned char * buf, unsigned int len, v
 	Uint32_To_BigEndianBytesArray(buf+3,UpgradeInfo.hwId);
 	Feedback(buf,len);
 }
-
-//编程Flash
 //void ModBus_Command_Decode_Program_Flash(unsigned char * buf, unsigned int len, void (*Feedback)(unsigned char * buf, unsigned int len))
 //{
 //	unsigned int addr,size;
@@ -83,7 +81,7 @@ void ModBus_Command_Decode_Upgrade_Info(unsigned char * buf, unsigned int len, v
 
 //	//开始烧录
 //	#ifndef DEBUG_COMMAND_DECODE_USE_EXTERNAL_RAM
-//	ret = Bootloader_ProgramBlock(buf+8,addr,size);
+//	ret = Bootloader_ProgramBlock(buf+8,APP_START_ADDR+addr,size);
 //	#else
 //	ret = ProgramBlock_to_Ram(buf+8,addr,size);
 //	#endif
@@ -98,50 +96,6 @@ void ModBus_Command_Decode_Upgrade_Info(unsigned char * buf, unsigned int len, v
 //	Feedback(buf,len);
 //}
 
-//void ModBus_Command_Decode_Program_Flash(unsigned char * buf, unsigned int len, void (*Feedback)(unsigned char * buf, unsigned int len))
-//{
-//    unsigned int addr, size;
-//    int ret = 0;
-//    addr = BigEndianBytesArray_To_Uint32(buf+2);
-//    size = BigEndianBytesArray_To_Uint16(buf+6);
-//    
-//    // 地址转换（逻辑地址→物理地址）
-//    uint32_t physical_addr = APP_START_ADDR + addr;
-//    
-//    // 确保地址8字节对齐
-//    if (physical_addr % 8 != 0) {
-//        physical_addr = physical_addr & ~0x7; // 向下对齐到8字节边界
-//    }
-//    
-//    // 解密数据
-//    Decrypt_Block_Data((unsigned long *)(buf + 8), size/4);
-//    printf("Decrypted %d bytes:\n", size);
-//    for(int i=0; i<size; i++) {
-//        printf("%02X ", buf[8+i]);
-//        if((i+1)%16 == 0) printf("\n");
-//    }
-//    printf("\n");
-//    // 开始烧录
-//    #ifndef DEBUG_COMMAND_DECODE_USE_EXTERNAL_RAM
-//    ret = Bootloader_ProgramBlock(buf+8, physical_addr, size);
-//    #else
-//    ret = ProgramBlock_to_Ram(buf+8, physical_addr, size);
-//    #endif
-//    
-//    if (ret) {
-//        // 烧录出错,反馈烧录了0字节
-//        Uint16_To_BigEndianBytesArray(buf+6, 0);
-//		} 
-//    else {
-//        // 成功则更新响应中的地址为物理地址
-//        Uint32_To_BigEndianBytesArray(buf+2, physical_addr);
-//    }
-
-//    len = 10;
-//    ModBus_Fill_CRC16(buf, len);
-//    Feedback(buf, len);
-//}
-
 void ModBus_Command_Decode_Program_Flash(unsigned char * buf, unsigned int len, void (*Feedback)(unsigned char * buf, unsigned int len))
 {
     unsigned int addr, size;
@@ -149,34 +103,43 @@ void ModBus_Command_Decode_Program_Flash(unsigned char * buf, unsigned int len, 
     addr = BigEndianBytesArray_To_Uint32(buf+2);
     size = BigEndianBytesArray_To_Uint16(buf+6);
     
-    // 物理地址计算（修复对齐逻辑）
+    // 物理地址计算
     uint32_t physical_addr = APP_START_ADDR + addr;
     uint32_t padding = 0;
     
-    // 计算需要的填充字节
+    // 计算对齐填充
     if (physical_addr % 8 != 0) {
         padding = 8 - (physical_addr % 8);
-        physical_addr = (physical_addr + 7) & ~0x7; // 向上对齐到8字节边界
+        physical_addr = (physical_addr + 7) & ~0x7; // 8字节对齐
     }
 
-    // 实际需要解密的数据偏移量
     unsigned char* data_start = buf + 8 + padding;
     unsigned int real_size = size - padding;
 
-    // 解密数据（只处理对齐后的数据）
+    // 修复多余数据问题：检查实际可处理的数据量
+    unsigned int max_data_available = len - 8 - padding;
+    if (real_size > max_data_available) {
+        real_size = max_data_available;
+    }
+
+    // 解密数据
     if (real_size > 0) {
-        printf("Decrypting %d bytes (padding: %d)\n", real_size, padding);
-        Decrypt_Block_Data((unsigned long *)data_start, real_size/4);
+        // 执行解密操作
+        unsigned int dwords = (real_size + 3) / 4; // 向上取整到4字节倍数
+        Decrypt_Block_Data((unsigned long *)data_start, dwords);
+        
+        // 只打印解密数据
+        for(int i = 0; i < real_size; i++) {
+            printf("%02X ", data_start[i]);
+            if((i+1) % 16 == 0) printf("\n"); 
+        }
+        printf("\n");
+
+        // 编程Flash
         ret = Bootloader_ProgramBlock(data_start, physical_addr, real_size);
     }
-    // 解密数据
-    //Decrypt_Block_Data((unsigned long *)(buf + 8), size/4);
-    printf("Decrypted %d bytes:\n", size);
-    for(int i=0; i<size; i++) {
-        printf("%02X ", buf[8+i]);
-        if((i+1)%16 == 0) printf("\n");
-    }
-    // 设置响应中的烧录字节数
+
+    // 设置响应
     Uint16_To_BigEndianBytesArray(buf+6, (ret == 0) ? real_size : 0);
     Uint32_To_BigEndianBytesArray(buf+2, physical_addr);
 
