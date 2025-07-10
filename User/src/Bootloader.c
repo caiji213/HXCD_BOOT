@@ -1,6 +1,7 @@
 #include "bsp.h"
 #include "Bootloader.h"
 #include "gd32g5x3_fmc.h"
+#include "gd32g5x3.h"
 #include <stdio.h>
 // 全局变量定义
 Memory_Info App_Flash_Info;
@@ -315,27 +316,11 @@ int Bootloader_EraseAllFlash(void)
 //}
 int Bootloader_ProgramBlock(unsigned char *buf, uint32_t address, uint32_t size)
 {
-    printf("[Flash] Starting programming operation, Address: 0x%08X, Size: %u bytes\r\n", address, size);
-    
-    // 验证地址在APP区域内
-    if (address < APP_START_ADDR || address > APP_END_ADDR) {
-        printf("[Flash] Error: Address 0x%08X out of APP range (0x%08X-0x%08X)\r\n", 
-               address, APP_START_ADDR, APP_END_ADDR);
-        return 1;
-    }
-
-    // 验证大小是8的倍数（双字对齐）
-//    if (size % 8 != 0) {
-//        printf("[Flash] Error: Data size %u not multiple of 8 (requires double-word alignment)\r\n", size);
-//        return 2;
-//    }
-
-    // 关键修改：使用双字编程
     uint32_t double_words = size / 8;
     uint64_t *data_ptr = (uint64_t *)buf;
     fmc_state_enum status;
     
-    printf("[Flash] Preparing to program %u double-words\r\n", double_words);
+    //printf("[Flash] Preparing to program %u double-words\r\n", double_words);
     __disable_irq(); // 禁用中断
     fmc_unlock();    // 解锁Flash
 
@@ -348,7 +333,7 @@ int Bootloader_ProgramBlock(unsigned char *buf, uint32_t address, uint32_t size)
         
         if (status != FMC_READY)
         {
-            printf("[Flash] Error: Programming failed at 0x%08X, status: %d\r\n", current_addr, status);
+            //printf("[Flash] Error: Programming failed at 0x%08X, status: %d\r\n", current_addr, status);
             fmc_lock();
             __enable_irq();
             return 3;
@@ -358,7 +343,6 @@ int Bootloader_ProgramBlock(unsigned char *buf, uint32_t address, uint32_t size)
     fmc_lock();     // 锁定Flash
     __enable_irq(); // 恢复中断
     
-    printf("[Flash] Programming completed successfully\r\n");
     return 0;
 }
 int Bootloader_Write_App_CRC(uint32_t crc)
@@ -407,34 +391,64 @@ int Bootloader_Write_App_Size(uint32_t size)
     }
     return 1;
 }
+/*跳转到应用App，跳转之前先关闭已经使用的外设，注意，该函数只能在中断外执行，否则跳转后无法再进入中断*/
+//void Bootloader_RunAPP(void)
+//{
+//    volatile vector_t *vector_p = (vector_t *)APP_START_ADDR;
+//	volatile uint32_t stack_arr[100]    = {0}; // Allocate some stack
+//                                               // just to show that
+//                                               // the SP should be reset
+//                                               // before the jump - or the
+//                                               // stack won't be configured
+//                                               // correctly.
+//    __disable_irq(); // 关闭所有中断
+//    __set_FAULTMASK(1);	//关闭中断,确保跳转过程中 不会进入中断,导致跳转失败
 
-void Bootloader_RunAPP(void)
+//    // 重置所有外设到默认状态
+//	//bsp_deinit();
+//		
+//    // 配置堆栈指针和向量表
+//    __set_MSP(vector_p->stack_addr);
+
+//     SCB->VTOR = APP_START_ADDR;
+
+//    // 跳转到应用
+//    vector_p->func_p();
+//  
+//}
+ void Bootloader_RunAPP(void)
 {
-    const vector_t *vector_p = (vector_t *)APP_START_ADDR;
-	volatile uint32_t stack_arr[100]    = {0}; // Allocate some stack
-                                               // just to show that
-                                               // the SP should be reset
-                                               // before the jump - or the
-                                               // stack won't be configured
-                                               // correctly.
-    __disable_irq(); // 关闭所有中断
-
+    // 使用volatile防止编译器优化
+    volatile uint32_t *app_vector = (volatile uint32_t *)APP_START_ADDR;
+    
+    // 直接获取关键地址（避免通过指针结构体）
+    volatile uint32_t stack_ptr = app_vector[0];  // 栈指针在0x00偏移
+    volatile uint32_t reset_handler = app_vector[1]; // 复位函数在0x04偏移
+    
+    // 关闭所有中断
+    __disable_irq();
+	
     // 重置所有外设到默认状态
-    rcu_deinit();
-	bsp_deinit();
-		
-    // 配置堆栈指针和向量表
-    __set_MSP(vector_p->stack_addr);
-    SCB->VTOR = APP_START_ADDR;
-
-    // 跳转到应用
-    vector_p->func_p();
-
-//    // 理论上不会执行到这里
-//    while (1)
-//        ;
+    bsp_deinit();
+	
+    // 设置VTOR前添加屏障
+    __DSB();
+    
+    // 设置向量表偏移（128字节对齐）
+    SCB->VTOR = APP_START_ADDR & 0xFFFFFF80;
+    
+    // 完整的内存屏障序列
+    __DSB();
+    __ISB();
+    
+    // 使用内联汇编安全跳转
+    __ASM volatile(
+        "msr msp, %0  \n\t"   // 设置主栈指针
+        "bx %1       \n\t"   // 跳转到复位处理函数
+        : 
+        : "r" (stack_ptr), "r" (reset_handler)
+    );
 }
-
 
 uint32_t Bootloader_Read_Stored_CRC(void)
 {

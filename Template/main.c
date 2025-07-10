@@ -37,11 +37,11 @@ int main(void)
 	
 	// 初始化
     systick_config();               // 滴答定时器初始化
-    bsp_crc_init();                 // 硬件crc计算
+   
 	Bootloader_Hal_Init(); 
-	//强制进入App，用于参数初始化重启
-	  //Bootloader_RunAPP();
-	if(RunAPP_Flag == FLAG_RUNAPP_FORCE)
+	
+	//if(RunAPP_Flag == FLAG_RUNAPP_FORCE)
+	if(1)
 	{
 		//强制进入App，用于参数初始化重启
 	   Bootloader_RunAPP();
@@ -60,11 +60,12 @@ int main(void)
 	{
 	     bsp_rs232_init(115200, PTY_NONE, DMA_ENABLE);
 	     bsp_rs485_init(115200, PTY_NONE, DMA_ENABLE);
+		 bsp_crc_init();                 // 硬件crc计算
 		 bsp_i2c_init();                  // I2C初始化
 	     nvic_config();                   // 中断配置
 	     __enable_irq();                  // 开中断 
 	     ModBus_Init(1);      
-		 printf("[Flash] bsp_rs232_init,bsp_rs485_init\r\n");
+		 printf("[boot] bsp_rs232_init,bsp_rs485_init\r\n");
 	}
 
 //	if(DoNotCheckTxRxShort)
@@ -104,19 +105,14 @@ int main(void)
 	strcat(str_DeviceInfo,__TIME__);
 	
     while (1)
-    {
-//		if ((g_sys_tick - last_tick) >= 1)
-//        {
-//           last_tick = g_sys_tick;
-//        }
-		          
+    {   
 		  //modbus数据处理函数
 		  ModBus_Slave_Process();
 		  //检查跳转APP的标志
 		  if(Bootloader_Get_Jump_Flag())
 		  {
-			  Bootloader_Set_Jump_Flag(0);
 			  RunAPP_Flag = FLAG_GO_APP;
+			  Bootloader_Set_Jump_Flag(0);
 			  Bootloader_RunAPP();
 		  }
     }

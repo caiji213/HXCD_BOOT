@@ -109,7 +109,7 @@ extern "C"
 #define INFO_SIZE           (1U * 1024UL)   // 1KB
 #define INFO_END_ADDR       (INFO_START_ADDR + INFO_SIZE - 1)  // 0x080083FF
 
-#define APP_START_ADDR      (INFO_START_ADDR + INFO_SIZE)      // 0x08008400UL   // App 区起始地址
+#define APP_START_ADDR       0x08008400UL//(INFO_START_ADDR + INFO_SIZE)      // 0x08008400UL   // App 区起始地址
 #define APP_SIZE            (479U * 1024UL) // 479KB
 #define APP_END_ADDR        (APP_START_ADDR + APP_SIZE - 1)    // 0x0807FFFF
 

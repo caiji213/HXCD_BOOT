@@ -36,9 +36,6 @@ void uart_deinit_all(void)
 {
     usart_deinit(USART0);
     usart_deinit(USART1);
-    usart_deinit(USART2);
-    usart_deinit(UART3);
-    usart_deinit(UART4);
 }
 
 /* GPIOÈ«²¿¸´Î» */
