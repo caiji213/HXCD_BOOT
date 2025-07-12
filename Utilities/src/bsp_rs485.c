@@ -8,7 +8,7 @@
 #include "bsp_rs485.h"
 
 uint32_t rs485_rx_count = 0;
-uint32_t rs485_rxbuffer[RS485_BUFFER_SIZE];
+uint8_t rs485_rxbuffer[RS485_BUFFER_SIZE];
 __IO FlagStatus rs485_idle_flag = RESET;
 __IO FlagStatus rs485_tx_flag = SET;
 

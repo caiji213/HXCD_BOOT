@@ -416,40 +416,86 @@ int Bootloader_Write_App_Size(uint32_t size)
 //    vector_p->func_p();
 //  
 //}
- void Bootloader_RunAPP(void)
+// void Bootloader_RunAPP(void)
+//{
+//    // 使用volatile防止编译器优化
+//    volatile uint32_t *app_vector = (volatile uint32_t *)APP_START_ADDR;
+//    
+//    // 直接获取关键地址（避免通过指针结构体）
+//    volatile uint32_t stack_ptr = app_vector[0];  // 栈指针在0x00偏移
+//    volatile uint32_t reset_handler = app_vector[1]; // 复位函数在0x04偏移
+//    
+//    // 关闭所有中断
+//    __disable_irq();
+//	
+//    // 重置所有外设到默认状态
+//    bsp_deinit();
+//	
+//    // 设置VTOR前添加屏障
+//    __DSB();
+//    
+//    // 设置向量表偏移（128字节对齐）
+//    SCB->VTOR = APP_START_ADDR & 0xFFFFFF80;
+//    
+//    // 完整的内存屏障序列
+//    __DSB();
+//    __ISB();
+//    
+//    // 使用内联汇编安全跳转
+//    __ASM volatile(
+//        "msr msp, %0  \n\t"   // 设置主栈指针
+//        "bx %1       \n\t"   // 跳转到复位处理函数
+//        : 
+//        : "r" (stack_ptr), "r" (reset_handler)
+//    );
+//}
+void Bootloader_RunAPP(void)
 {
+    // 关闭SysTick定时器并清除中断标志
+    SysTick->CTRL = 0;                     // 禁用SysTick
+    SysTick->VAL = 0;                      // 清除当前计数值
+    NVIC_ClearPendingIRQ(SysTick_IRQn);    // 清除SysTick中断挂起标志
+
+    // 清除所有中断挂起标志
+    for (int i = 0; i < 8; i++)            // 遍历所有32位NVIC挂起寄存器(IRQ0-IRQ239)
+	{  
+        NVIC->ICPR[i] = 0xFFFFFFFF;        // 清除所有挂起中断
+    }
+    SCB->ICSR |= SCB_ICSR_PENDSVCLR_Msk;   // 清除PendSV挂起标志
+    
     // 使用volatile防止编译器优化
     volatile uint32_t *app_vector = (volatile uint32_t *)APP_START_ADDR;
     
-    // 直接获取关键地址（避免通过指针结构体）
-    volatile uint32_t stack_ptr = app_vector[0];  // 栈指针在0x00偏移
+    // 直接获取关键地址
+    volatile uint32_t stack_ptr = app_vector[0];     // 栈指针在0x00偏移
     volatile uint32_t reset_handler = app_vector[1]; // 复位函数在0x04偏移
     
     // 关闭所有中断
     __disable_irq();
-	
+    __set_BASEPRI(0);  // 取消任何优先级屏蔽
+
     // 重置所有外设到默认状态
     bsp_deinit();
-	
+    
     // 设置VTOR前添加屏障
     __DSB();
+    __ISB();
     
     // 设置向量表偏移（128字节对齐）
-    SCB->VTOR = APP_START_ADDR & 0xFFFFFF80;
+    SCB->VTOR = (uint32_t)APP_START_ADDR & 0xFFFFFF80;
     
     // 完整的内存屏障序列
     __DSB();
     __ISB();
     
-    // 使用内联汇编安全跳转
+    // 执行跳转 - 先设置栈指针再跳转
     __ASM volatile(
-        "msr msp, %0  \n\t"   // 设置主栈指针
-        "bx %1       \n\t"   // 跳转到复位处理函数
+        "msr msp, %0     \n\t"    // 设置主栈指针
+        "bx %1          \n\t"     // 跳转到复位处理函数
         : 
         : "r" (stack_ptr), "r" (reset_handler)
     );
 }
-
 uint32_t Bootloader_Read_Stored_CRC(void)
 {
     return *((uint32_t *)(App_Info.addr_crc));

@@ -40,8 +40,8 @@ int main(void)
    
 	Bootloader_Hal_Init(); 
 	
-	//if(RunAPP_Flag == FLAG_RUNAPP_FORCE)
-	if(1)
+	if(RunAPP_Flag == FLAG_RUNAPP_FORCE)
+	//if(1)
 	{
 		//强制进入App，用于参数初始化重启
 	   Bootloader_RunAPP();
