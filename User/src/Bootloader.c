@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <string.h>  
+#include <string.h>
 // 全局变量定义
 Memory_Info App_Flash_Info;
 Memory_Info Boot_Flash_Info;
@@ -81,7 +81,7 @@ static void configure_flash_waitstates(void)
 void Bootloader_Hal_Init(void)
 {
     // 配置216MHz等待状态
-   // configure_flash_waitstates();
+    // configure_flash_waitstates();
 
     // Bootloader Flash信息
     Boot_Flash_Info.page_size = FLASH_PAGE_SIZE;
@@ -147,7 +147,6 @@ uint32_t Bootloader_GetBootCRC(void)
                                     INPUT_FORMAT_WORD);
 }
 
-
 /* 检查APP区域完整性*/
 int Bootloader_CheckApp(void)
 {
@@ -177,8 +176,8 @@ uint32_t Bootloader_GetAppCRC(void)
 }
 
 /*
-* 擦除APP区域
-*/
+ * 擦除APP区域
+ */
 int Bootloader_EraseApp(void)
 {
     fmc_state_enum status;
@@ -188,19 +187,18 @@ int Bootloader_EraseApp(void)
     // 计算起始页（Bank0部分）
     uint32_t start_addr = App_Flash_Info.start_addr;
     uint32_t bank0_end_addr = 0x0803FFFFUL; // Bank0结束地址
-    __disable_irq(); //关中断
+    __disable_irq();                        // 关中断
     // Bank0部分的页范围
     if (start_addr <= bank0_end_addr)
     {
         // Bank0部分需要擦除的页
         start_page = (start_addr - BOOT_START_ADDR) / page_size;
         end_page = 255; // Bank0的最大页号
-		
-        __disable_irq(); //关中断
+
+        __disable_irq(); // 关中断
         // 解锁Flash
         fmc_unlock();
-        
-		
+
         // 擦除Bank0的App页
         for (uint32_t i = start_page; i <= end_page; i++)
         {
@@ -208,14 +206,14 @@ int Bootloader_EraseApp(void)
             if (status != FMC_READY)
             {
                 fmc_lock();
-				__enable_irq(); //开中断
+                __enable_irq(); // 开中断
                 return 1;
             }
         }
-        
+
         // 锁定Flash（Bank1擦除时会再次解锁）
         fmc_lock();
-		__enable_irq(); //开中断
+        __enable_irq(); // 开中断
     }
 
     // Bank1部分的页范围（0到App结束地址所在的页）
@@ -226,12 +224,11 @@ int Bootloader_EraseApp(void)
         // 计算Bank1部分的页范围
         start_page = 0; // Bank1起始页
         end_page = (App_Flash_Info.end_addr - bank1_start_addr) / page_size;
-		
-        __disable_irq(); //关中断
+
+        __disable_irq(); // 关中断
         // 解锁Flash
         fmc_unlock();
-       
-		
+
         // 擦除Bank1的App页
         for (uint32_t i = start_page; i <= end_page; i++)
         {
@@ -239,27 +236,27 @@ int Bootloader_EraseApp(void)
             if (status != FMC_READY)
             {
                 fmc_lock();
-				__enable_irq(); //开中断
+                __enable_irq(); // 开中断
                 return 1;
             }
         }
 
         // 重新锁定Flash
         fmc_lock();
-		__enable_irq(); //开中断
+        __enable_irq(); // 开中断
     }
 
     return 0;
 }
 
 /*
-* 擦除全部flash区域
-*/
+ * 擦除全部flash区域
+ */
 int Bootloader_EraseAllFlash(void)
 {
     fmc_state_enum status;
-	
-    __disable_irq(); //关中断
+
+    __disable_irq(); // 关中断
     // 解锁Flash
     fmc_unlock();
 
@@ -268,21 +265,21 @@ int Bootloader_EraseAllFlash(void)
     if (status != FMC_READY)
     {
         fmc_lock();
-		__enable_irq(); //开中断
+        __enable_irq(); // 开中断
         return 1;
     }
 
     // Bank1整块擦除
     status = fmc_bank1_erase();
     fmc_lock();
-    __enable_irq(); //开中断
+    __enable_irq(); // 开中断
     return (status == FMC_READY) ? 0 : 1;
 }
 
 ///*
 //* 双字节烧录
 //*/
-//int Bootloader_ProgramBlock(unsigned char *buf, uint32_t address, uint32_t size)
+// int Bootloader_ProgramBlock(unsigned char *buf, uint32_t address, uint32_t size)
 //{
 //    // 确保地址在APP区域
 //    if (address < APP_START_ADDR || address > APP_END_ADDR)
@@ -295,7 +292,7 @@ int Bootloader_EraseAllFlash(void)
 //    uint32_t words = size / 8;
 //    uint64_t *data_ptr = (uint64_t *)buf;
 //    fmc_state_enum status;
-//	
+//
 //    __disable_irq(); //关中断
 //    // 解锁Flash
 //    fmc_unlock();
@@ -317,12 +314,12 @@ int Bootloader_EraseAllFlash(void)
 //	__enable_irq(); //开中断
 //    return 0;
 //}
-//int Bootloader_ProgramBlock(unsigned char *buf, uint32_t address, uint32_t size)
+// int Bootloader_ProgramBlock(unsigned char *buf, uint32_t address, uint32_t size)
 //{
 //    uint32_t double_words = size / 8;
 //    uint64_t *data_ptr = (uint64_t *)buf;
 //    fmc_state_enum status;
-//    
+//
 //    //printf("[Flash] Preparing to program %u double-words\r\n", double_words);
 //    __disable_irq(); // 禁用中断
 //    fmc_unlock();    // 解锁Flash
@@ -330,10 +327,10 @@ int Bootloader_EraseAllFlash(void)
 //    for (uint32_t i = 0; i < double_words; i++)
 //    {
 //        uint32_t current_addr = address + i * 8;
-//        
+//
 //        // 关键修改：使用双字编程函数
 //        status = fmc_doubleword_program(current_addr, data_ptr[i]);
-//        
+//
 //        if (status != FMC_READY)
 //        {
 //            //printf("[Flash] Error: Programming failed at 0x%08X, status: %d\r\n", current_addr, status);
@@ -345,7 +342,7 @@ int Bootloader_EraseAllFlash(void)
 
 //    fmc_lock();     // 锁定Flash
 //    __enable_irq(); // 恢复中断
-//    
+//
 //    return 0;
 //}
 
@@ -356,67 +353,74 @@ void Bootloader_Program_Init(void)
     s_prog_state.buffered = 0;
 }
 /*
-* 新的编程函数，要求数据大小是4的倍数
-*/
+ * 新的编程函数，要求数据大小是4的倍数
+ */
 int Bootloader_ProgramBlock(unsigned char *buf, uint32_t address, uint32_t size)
 {
     // 检查地址是否在APP区域
     if (address < APP_START_ADDR || address > APP_END_ADDR)
         return 1;
-    
+
     // 确保大小是4的倍数
     if (size % 4 != 0)
         return 2;
-    
+
     fmc_state_enum status;
     uint8_t *data_ptr = buf;
     uint32_t remaining = size;
-    
+
     __disable_irq();
     fmc_unlock();
-    
+
     // 1. 如果缓冲区中有4字节数据，与本次数据前4字节合并
-    if (s_prog_state.buffered == 4) {
+    if (s_prog_state.buffered == 4)
+    {
         // 合并成8字节 (缓冲区的4字节 + 本次前4字节)
         memcpy(s_prog_state.buffer + 4, data_ptr, 4);
-        
+
         // 写入完整8字节
         status = fmc_doubleword_program(address, *((uint64_t *)s_prog_state.buffer));
-        if (status != FMC_READY) {
+        if (status != FMC_READY)
+        {
             fmc_lock();
             __enable_irq();
             return 3;
         }
-        
+
         address += 8;
         data_ptr += 4;
         remaining -= 4;
         s_prog_state.buffered = 0;
     }
-    
+
     // 2. 处理完整的8字节块
-    while (remaining >= 8) {
+    while (remaining >= 8)
+    {
         status = fmc_doubleword_program(address, *((uint64_t *)data_ptr));
-        if (status != FMC_READY) {
+        if (status != FMC_READY)
+        {
             fmc_lock();
             __enable_irq();
             return 3;
         }
-        
+
         address += 8;
         data_ptr += 8;
         remaining -= 8;
     }
-    
+
     // 3. 处理剩余数据（保证是4字节）
-    if (remaining == 4) {
+    if (remaining == 4)
+    {
         // 将剩余4字节存入缓冲区
         memcpy(s_prog_state.buffer, data_ptr, 4);
         s_prog_state.buffered = 4;
-    } else {
+    }
+    else
+    {
         s_prog_state.buffered = 0;
     }
-    
+
     fmc_lock();
     __enable_irq();
     return 0;
@@ -425,8 +429,8 @@ int Bootloader_Write_App_CRC(uint32_t crc)
 {
     uint64_t combined = ((uint64_t)crc << 32) | App_Info.size;
     fmc_state_enum status;
-	
-    __disable_irq(); //关中断
+
+    __disable_irq(); // 关中断
     // 解锁Flash
     fmc_unlock();
 
@@ -434,8 +438,8 @@ int Bootloader_Write_App_CRC(uint32_t crc)
 
     // 重新锁定Flash
     fmc_lock();
-    __enable_irq(); //开中断
-	
+    __enable_irq(); // 开中断
+
     if (status == FMC_READY)
     {
         App_Info.crc = crc;
@@ -449,17 +453,16 @@ int Bootloader_Write_App_Size(uint32_t size)
     uint64_t combined = ((uint64_t)App_Info.crc << 32) | size;
     fmc_state_enum status;
 
-	__disable_irq(); //关中断
+    __disable_irq(); // 关中断
     // 解锁Flash
     fmc_unlock();
 
     status = fmc_doubleword_program(APP_SIZE_ADDR, combined);
 
-
     // 重新锁定Flash
     fmc_lock();
-    __enable_irq(); //开中断
-	
+    __enable_irq(); // 开中断
+
     if (status == FMC_READY)
     {
         App_Info.size = size;
@@ -468,21 +471,21 @@ int Bootloader_Write_App_Size(uint32_t size)
     return 1;
 }
 /*跳转到应用App，跳转之前先关闭已经使用的外设，注意，该函数只能在中断外执行，否则跳转后无法再进入中断*/
-//void Bootloader_RunAPP(void)
+// void Bootloader_RunAPP(void)
 //{
-//    volatile vector_t *vector_p = (vector_t *)APP_START_ADDR;
+//     volatile vector_t *vector_p = (vector_t *)APP_START_ADDR;
 //	volatile uint32_t stack_arr[100]    = {0}; // Allocate some stack
-//                                               // just to show that
-//                                               // the SP should be reset
-//                                               // before the jump - or the
-//                                               // stack won't be configured
-//                                               // correctly.
-//    __disable_irq(); // 关闭所有中断
-//    __set_FAULTMASK(1);	//关闭中断,确保跳转过程中 不会进入中断,导致跳转失败
+//                                                // just to show that
+//                                                // the SP should be reset
+//                                                // before the jump - or the
+//                                                // stack won't be configured
+//                                                // correctly.
+//     __disable_irq(); // 关闭所有中断
+//     __set_FAULTMASK(1);	//关闭中断,确保跳转过程中 不会进入中断,导致跳转失败
 
 //    // 重置所有外设到默认状态
 //	//bsp_deinit();
-//		
+//
 //    // 配置堆栈指针和向量表
 //    __set_MSP(vector_p->stack_addr);
 
@@ -490,87 +493,86 @@ int Bootloader_Write_App_Size(uint32_t size)
 
 //    // 跳转到应用
 //    vector_p->func_p();
-//  
+//
 //}
 // void Bootloader_RunAPP(void)
 //{
 //    // 使用volatile防止编译器优化
 //    volatile uint32_t *app_vector = (volatile uint32_t *)APP_START_ADDR;
-//    
+//
 //    // 直接获取关键地址（避免通过指针结构体）
 //    volatile uint32_t stack_ptr = app_vector[0];  // 栈指针在0x00偏移
 //    volatile uint32_t reset_handler = app_vector[1]; // 复位函数在0x04偏移
-//    
+//
 //    // 关闭所有中断
 //    __disable_irq();
-//	
+//
 //    // 重置所有外设到默认状态
 //    bsp_deinit();
-//	
+//
 //    // 设置VTOR前添加屏障
 //    __DSB();
-//    
+//
 //    // 设置向量表偏移（128字节对齐）
 //    SCB->VTOR = APP_START_ADDR & 0xFFFFFF80;
-//    
+//
 //    // 完整的内存屏障序列
 //    __DSB();
 //    __ISB();
-//    
+//
 //    // 使用内联汇编安全跳转
 //    __ASM volatile(
 //        "msr msp, %0  \n\t"   // 设置主栈指针
 //        "bx %1       \n\t"   // 跳转到复位处理函数
-//        : 
+//        :
 //        : "r" (stack_ptr), "r" (reset_handler)
 //    );
 //}
 void Bootloader_RunAPP(void)
 {
     // 关闭SysTick定时器并清除中断标志
-    SysTick->CTRL = 0;                     // 禁用SysTick
-    SysTick->VAL = 0;                      // 清除当前计数值
-    NVIC_ClearPendingIRQ(SysTick_IRQn);    // 清除SysTick中断挂起标志
+    SysTick->CTRL = 0;                  // 禁用SysTick
+    SysTick->VAL = 0;                   // 清除当前计数值
+    NVIC_ClearPendingIRQ(SysTick_IRQn); // 清除SysTick中断挂起标志
 
     // 清除所有中断挂起标志
-    for (int i = 0; i < 8; i++)            // 遍历所有32位NVIC挂起寄存器(IRQ0-IRQ239)
-	{  
-        NVIC->ICPR[i] = 0xFFFFFFFF;        // 清除所有挂起中断
+    for (int i = 0; i < 8; i++) // 遍历所有32位NVIC挂起寄存器(IRQ0-IRQ239)
+    {
+        NVIC->ICPR[i] = 0xFFFFFFFF; // 清除所有挂起中断
     }
-    SCB->ICSR |= SCB_ICSR_PENDSVCLR_Msk;   // 清除PendSV挂起标志
-    
+    SCB->ICSR |= SCB_ICSR_PENDSVCLR_Msk; // 清除PendSV挂起标志
+
     // 使用volatile防止编译器优化
     volatile uint32_t *app_vector = (volatile uint32_t *)APP_START_ADDR;
-    
+
     // 直接获取关键地址
     volatile uint32_t stack_ptr = app_vector[0];     // 栈指针在0x00偏移
     volatile uint32_t reset_handler = app_vector[1]; // 复位函数在0x04偏移
-    
+
     // 关闭所有中断
     __disable_irq();
-    __set_BASEPRI(0);  // 取消任何优先级屏蔽
+    __set_BASEPRI(0); // 取消任何优先级屏蔽
 
     // 重置所有外设到默认状态
     bsp_deinit();
-    
+
     // 设置VTOR前添加屏障
     __DSB();
     __ISB();
-    
+
     // 设置向量表偏移（128字节对齐）
     SCB->VTOR = (uint32_t)APP_START_ADDR & 0xFFFFFF80;
-    
+
     // 完整的内存屏障序列
     __DSB();
     __ISB();
-    
+
     // 执行跳转 - 先设置栈指针再跳转
     __ASM volatile(
-        "msr msp, %0     \n\t"    // 设置主栈指针
-        "bx %1          \n\t"     // 跳转到复位处理函数
-        : 
-        : "r" (stack_ptr), "r" (reset_handler)
-    );
+        "msr msp, %0     \n\t" // 设置主栈指针
+        "bx %1          \n\t"  // 跳转到复位处理函数
+        : : "r"(stack_ptr),
+        "r"(reset_handler));
 }
 uint32_t Bootloader_Read_Stored_CRC(void)
 {
