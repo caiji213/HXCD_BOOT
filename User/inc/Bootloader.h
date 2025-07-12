@@ -123,6 +123,11 @@ extern "C"
 #define FLAG_RUNAPP 0x00707041       // App 正常进入App
 #define FLAG_RUNBOOT 0x746F6F42      // Boot
 #define FLAG_CRC_ERROR 0x45435243    // CRCE
+// 定义编程状态结构体
+typedef struct {
+    uint8_t buffer[8];      // 8字节缓冲区
+    uint8_t buffered;       // 缓冲区中已有字节数 (0, 4, 8)
+} FlashProgramState;
 
 /* ================== 其他常量定义 ================== */
 #define Sram_UpdateFlag_Vector (SRAM_BASE)
@@ -143,7 +148,8 @@ extern "C"
     extern int Bootloader_EraseAllFlash(void);
     extern uint32_t Bootloader_GethwID(void);
     extern void Bootloader_RunAPP(void);
-
+    extern void Bootloader_Program_Init(void);
+    //extern int Bootloader_ProgramBlock_4Align(uint32_t address, uint8_t *data, uint32_t size);
 #ifdef __cplusplus
 }
 #endif

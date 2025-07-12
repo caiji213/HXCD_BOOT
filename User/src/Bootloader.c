@@ -3,6 +3,9 @@
 #include "gd32g5x3_fmc.h"
 #include "gd32g5x3.h"
 #include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <string.h>  
 // 全局变量定义
 Memory_Info App_Flash_Info;
 Memory_Info Boot_Flash_Info;
@@ -314,35 +317,108 @@ int Bootloader_EraseAllFlash(void)
 //	__enable_irq(); //开中断
 //    return 0;
 //}
+//int Bootloader_ProgramBlock(unsigned char *buf, uint32_t address, uint32_t size)
+//{
+//    uint32_t double_words = size / 8;
+//    uint64_t *data_ptr = (uint64_t *)buf;
+//    fmc_state_enum status;
+//    
+//    //printf("[Flash] Preparing to program %u double-words\r\n", double_words);
+//    __disable_irq(); // 禁用中断
+//    fmc_unlock();    // 解锁Flash
+
+//    for (uint32_t i = 0; i < double_words; i++)
+//    {
+//        uint32_t current_addr = address + i * 8;
+//        
+//        // 关键修改：使用双字编程函数
+//        status = fmc_doubleword_program(current_addr, data_ptr[i]);
+//        
+//        if (status != FMC_READY)
+//        {
+//            //printf("[Flash] Error: Programming failed at 0x%08X, status: %d\r\n", current_addr, status);
+//            fmc_lock();
+//            __enable_irq();
+//            return 3;
+//        }
+//    }
+
+//    fmc_lock();     // 锁定Flash
+//    __enable_irq(); // 恢复中断
+//    
+//    return 0;
+//}
+
+static FlashProgramState s_prog_state = {0};
+
+void Bootloader_Program_Init(void)
+{
+    s_prog_state.buffered = 0;
+}
+/*
+* 新的编程函数，要求数据大小是4的倍数
+*/
 int Bootloader_ProgramBlock(unsigned char *buf, uint32_t address, uint32_t size)
 {
-    uint32_t double_words = size / 8;
-    uint64_t *data_ptr = (uint64_t *)buf;
-    fmc_state_enum status;
+    // 检查地址是否在APP区域
+    if (address < APP_START_ADDR || address > APP_END_ADDR)
+        return 1;
     
-    //printf("[Flash] Preparing to program %u double-words\r\n", double_words);
-    __disable_irq(); // 禁用中断
-    fmc_unlock();    // 解锁Flash
-
-    for (uint32_t i = 0; i < double_words; i++)
-    {
-        uint32_t current_addr = address + i * 8;
+    // 确保大小是4的倍数
+    if (size % 4 != 0)
+        return 2;
+    
+    fmc_state_enum status;
+    uint8_t *data_ptr = buf;
+    uint32_t remaining = size;
+    
+    __disable_irq();
+    fmc_unlock();
+    
+    // 1. 如果缓冲区中有4字节数据，与本次数据前4字节合并
+    if (s_prog_state.buffered == 4) {
+        // 合并成8字节 (缓冲区的4字节 + 本次前4字节)
+        memcpy(s_prog_state.buffer + 4, data_ptr, 4);
         
-        // 关键修改：使用双字编程函数
-        status = fmc_doubleword_program(current_addr, data_ptr[i]);
-        
-        if (status != FMC_READY)
-        {
-            //printf("[Flash] Error: Programming failed at 0x%08X, status: %d\r\n", current_addr, status);
+        // 写入完整8字节
+        status = fmc_doubleword_program(address, *((uint64_t *)s_prog_state.buffer));
+        if (status != FMC_READY) {
             fmc_lock();
             __enable_irq();
             return 3;
         }
+        
+        address += 8;
+        data_ptr += 4;
+        remaining -= 4;
+        s_prog_state.buffered = 0;
     }
-
-    fmc_lock();     // 锁定Flash
-    __enable_irq(); // 恢复中断
     
+    // 2. 处理完整的8字节块
+    while (remaining >= 8) {
+        status = fmc_doubleword_program(address, *((uint64_t *)data_ptr));
+        if (status != FMC_READY) {
+            fmc_lock();
+            __enable_irq();
+            return 3;
+        }
+        
+        address += 8;
+        data_ptr += 8;
+        remaining -= 8;
+    }
+    
+    // 3. 处理剩余数据（保证是4字节）
+    if (remaining == 4) {
+        // 将剩余4字节存入缓冲区
+        memcpy(s_prog_state.buffer, data_ptr, 4);
+        s_prog_state.buffered = 4;
+    } else {
+        s_prog_state.buffered = 0;
+    }
+    
+    fmc_lock();
+    __enable_irq();
     return 0;
 }
 int Bootloader_Write_App_CRC(uint32_t crc)
