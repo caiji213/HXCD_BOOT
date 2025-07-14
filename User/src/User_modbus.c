@@ -47,14 +47,6 @@ void ModBus_ChangeAddr(unsigned char addr)
 	ModBusVar.Slave_Addr = addr;
 }
 
-// 向上位机发送命令
-// extern void SendBytesInfoProcUART2(unsigned char * pSendInfo, unsigned int nSendCount);
-void ModBus_Slave_Response_Data(unsigned char *buf, unsigned int len)
-{
-	// rs485发送一帧指令，DMA模式
-	//	bsp_rs485_dma_send(buf,len);
-	//	bsp_rs232_dma_send(buf,len);
-}
 
 /* 从机发送完成，处于中断回调函数 */
 void ModBus_Slave_Send_Finished(void)
@@ -93,6 +85,7 @@ void ModBus_Slave_Process(void)
 				// 校验成功，判断来源
 				switch (p->cmd_from)
 				{
+				// 向上位机发送命令
 				case CMD_FROM_RS485:
 					ModBus_Command_Decode(p->Slave_Received_Data, p->Slave_Received_Data_Len, bsp_rs485_dma_send);
 					break;

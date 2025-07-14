@@ -19,7 +19,7 @@
 #include "Bootloader_Check_Force.h"
 #include "User_modbus_command_decode.h"
 
-char str_DeviceInfo[64] = "HXCD_Boot ";
+char str_DeviceInfo[64] = "HXCD_BOOT ";
 uint8_t buf[2] = {0, 0};
 
 #define ARRAYNUM(arr_nanme) (uint32_t)(sizeof(arr_nanme) / sizeof(*(arr_nanme)))
@@ -53,7 +53,8 @@ int main(void)
 		bsp_init(Boot_Para & 0xFFFFFF);
 		ModBus_Init(Boot_Para >> 24);
 		// 回复已跳转到Bootloader
-		ModBus_Command_Decode_Feedback_JumpBootloader(rs485_rxbuffer, Boot_Para >> 24, ModBus_Slave_Response_Data); // 升级跳入后第一次uart1回复
+		ModBus_Command_Decode_Feedback_JumpBootloader(rs485_rxbuffer, Boot_Para >> 24, bsp_rs485_dma_send); // 升级跳入后第一次485回复
+		ModBus_Command_Decode_Feedback_JumpBootloader(rs232_rxbuffer, Boot_Para >> 24, bsp_rs232_dma_send); // 升级跳入后第一次232回复
 		DoNotCheckTxRxShort = 1;
 	}
 	else

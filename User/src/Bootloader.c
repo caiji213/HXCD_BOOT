@@ -15,59 +15,6 @@ int Bootloader_Jump_Flag = 0;
 Info_t App_Info;
 Info_t Boot_Info;
 
-/* ==================================================================
- * Flash分区信息（GD32G553 512KB Flash - 双Bank模式 DBS=1）
- * 每页大小：1KB
- * Bank0：0x08000000 - 0x0803FFFF，共256页
- * Bank1：0x08040000 - 0x0807FFFF，共256页
- *
- * 页编号    Page    Begin           End             Size(Dec)    Size(hex)
- * ==================================================================
- * Bank0-000    0     0x08000000     0x080003FF      1024          0x400    <- Boot 起始页
- * Bank0-001    1     0x08000400     0x080007FF      1024          0x400
- * ...         ...     ...           ...              ...           ...
- * Bank0-031    31    0x08007C00     0x08007FFF      1024          0x400    <- Boot 最后一页
- * Bank0-032    32    0x08008000     0x080083FF      1024          0x400    <- Crypto 区
- * Bank0-033    33    0x08008400     0x080087FF      1024          0x400    <- App 起始页
- * ...         ...     ...           ...              ...           ...
- * Bank0-255    255   0x0803FC00     0x0803FFFF      1024          0x400
- * ==================================================================
- * Bank1-000    0     0x08040000     0x080403FF      1024          0x400
- * ...         ...     ...           ...              ...           ...
- * Bank1-252    252   0x0807F800     0x0807FBFF      1024          0x400
- * Bank1-253    253   0x0807FC00     0x0807FFFF      1024          0x400    <- App 最后一页（含APP校验数据）
- * ==================================================================
- *
- * 分区规划：
- * 1. Boot  使用 Bank0 页 0~31           (32页 = 32KB) -> 0x08000000 ~ 0x08007FFF
- * 2. Crypto 使用 Bank0 页 32            (1页 = 1KB)   -> 0x08008000 ~ 0x080083FF
- * 3. App   使用 Bank0 页 33~255 + Bank1 页 0~253 (479KB) -> 0x08008400 ~ 0x0807FFFF
- *
- * ==================================================================================
- * 区域名称    起始地址       结束地址        大小       使用说明
- * ----------------------------------------------------------------------------------
- * Boot 区     0x08000000     0x08007FFF      32KB       Bootloader 固件本体
- *             - 启动初始化、中断向量、跳转 App、通信升级协议等逻辑
- *
- * Crypto 区   0x08008000     0x080083FF      1KB
- *             - 存储AES加密密钥、设备证书、安全配置等敏感数据
- *             - 硬件加密引擎专用访问区域，禁止普通代码访问
- *             - 使用物理写保护机制防止未授权读取
- *
- * App 区      0x08008400     0x0807FFFF      479KB      应用程序主固件
- *             - 实际用户代码、业务逻辑、运行时资源
- *             - 最后 8 字节用于存储APP校验数据：
- *                 0x0807FFF8：App_Size（4字节）
- *                 0x0807FFFC：App_CRC32（4字节）
- *
- * ==================================================================================
- * APP校验数据位置：
- * - App信息存储在App区域最后8字节 (Bank1页253的最后8字节)
- *   - 大小地址: 0x0807FFF8
- *   - CRC地址:  0x0807FFFC
- * ==================================================================
- */
-
 // 自定义常量
 #define FLASH_PAGE_SIZE fmc_page_size_get() // 动态获取页大小
 
@@ -108,13 +55,13 @@ void Bootloader_Hal_Init(void)
     App_Info.addr_size = APP_SIZE_ADDR;
     App_Info.addr_crc = APP_CRC_ADDR;
     App_Info.size = *((uint32_t *)(App_Info.addr_size));
-    //App_Info.size = 22288;//测试使用
+    // App_Info.size = 22288;//测试使用
     App_Info.crc = *((uint32_t *)(App_Info.addr_crc));
     App_Info.hwId = Bootloader_GethwID();
 
     // Boot信息
-    Boot_Info.addr_size = BOOT_END_ADDR - 7;
-    Boot_Info.addr_crc = BOOT_END_ADDR - 3;
+    Boot_Info.addr_size = BOOT_SIZE_ADDR;
+    Boot_Info.addr_crc = BOOT_CRC_ADDR;
     Boot_Info.size = *((uint32_t *)(Boot_Info.addr_size));
     Boot_Info.crc = *((uint32_t *)(Boot_Info.addr_crc));
     Boot_Info.hwId = Bootloader_GethwID();
@@ -144,7 +91,7 @@ uint32_t Bootloader_GetBootCRC(void)
         return 0;
 
     return crc_block_data_calculate((void *)Boot_Flash_Info.start_addr,
-                                    boot_size/ sizeof(uint32_t),
+                                    boot_size / sizeof(uint32_t),
                                     INPUT_FORMAT_WORD);
 }
 
@@ -172,7 +119,7 @@ uint32_t Bootloader_GetAppCRC(void)
         return 0;
 
     return crc_block_data_calculate((void *)App_Flash_Info.start_addr,
-                                    app_size/ sizeof(uint32_t),
+                                    app_size / sizeof(uint32_t),
                                     INPUT_FORMAT_WORD);
 }
 
@@ -280,13 +227,13 @@ int Bootloader_EraseAllFlash(void)
 ///*
 //* 双字节烧录
 //*/
- int Bootloader_ProgramBlock(unsigned char *buf, uint32_t address, uint32_t size)
+int Bootloader_ProgramBlock(unsigned char *buf, uint32_t address, uint32_t size)
 {
     uint32_t double_words = size / 8;
     uint64_t *data_ptr = (uint64_t *)buf;
     fmc_state_enum status;
 
-    //printf("[Flash] Preparing to program %u double-words\r\n", double_words);
+    // printf("[Flash] Preparing to program %u double-words\r\n", double_words);
     __disable_irq(); // 禁用中断
     fmc_unlock();    // 解锁Flash
 
@@ -294,12 +241,12 @@ int Bootloader_EraseAllFlash(void)
     {
         uint32_t current_addr = address + i * 8;
 
-        //使用双字编程函数
+        // 使用双字编程函数
         status = fmc_doubleword_program(current_addr, data_ptr[i]);
 
         if (status != FMC_READY)
         {
-            //printf("[Flash] Error: Programming failed at 0x%08X, status: %d\r\n", current_addr, status);
+            // printf("[Flash] Error: Programming failed at 0x%08X, status: %d\r\n", current_addr, status);
             fmc_lock();
             __enable_irq();
             return 3;
@@ -311,7 +258,6 @@ int Bootloader_EraseAllFlash(void)
 
     return 0;
 }
-
 
 // 在底层实现的适配
 int Bootloader_Write_App_Size(uint32_t size)
@@ -325,50 +271,29 @@ int Bootloader_Write_App_CRC(uint32_t crc)
 }
 
 // 同时写入App_Size和App_CRC到同一个双字
-//int Bootloader_Write_App_Info(uint32_t size, uint32_t crc)
-//{
-//    // 合并两个32位值到64位
-//    uint64_t combined = ((uint64_t)crc << 32) | size;
-//    fmc_state_enum status;
-
-//    __disable_irq();
-//    fmc_unlock();
-//    
-//    // 必须将两个值作为一个整体写入
-//    status = fmc_doubleword_program(APP_SIZE_ADDR, combined);
-//    
-//    fmc_lock();
-//    __enable_irq();
-
-//    if (status == FMC_READY) {
-//        // 同时更新缓存值
-//        App_Info.size = size;
-//        App_Info.crc = crc;
-//        return 0;
-//    }
-//    return 1;  // 写入失败
-//}
 int Bootloader_Write_App_Info(uint32_t size, uint32_t crc)
 {
     fmc_state_enum status;
     uint64_t combined = ((uint64_t)crc << 32) | size;
-    
+
     __disable_irq();
     fmc_unlock();
     status = fmc_doubleword_program(APP_SIZE_ADDR, combined);
     fmc_lock();
     __enable_irq();
-    
-    if (status == FMC_READY) {
+
+    if (status == FMC_READY)
+    {
         App_Info.size = size;
         App_Info.crc = crc;
-        printf("[Flash] Write OK - Size:%u CRC:0x%08X\n", size, crc);
+        //printf("[Flash] Write OK - Size:%u CRC:0x%08X\n", size, crc);
         return 0;
     }
-    
-    printf("[Flash] Write FAIL! Addr:0x%08X Stat:%d\n", APP_SIZE_ADDR, status);
+
+    //printf("[Flash] Write FAIL! Addr:0x%08X Stat:%d\n", APP_SIZE_ADDR, status);
     return 1;
 }
+
 /*跳转到应用App，跳转之前先关闭已经使用的外设，注意，该函数只能在中断外执行，否则跳转后无法再进入中断*/
 // void Bootloader_RunAPP(void)
 //{
@@ -402,9 +327,9 @@ void Bootloader_RunAPP(void)
     NVIC_ClearPendingIRQ(SysTick_IRQn); // 清除SysTick中断挂起标志
 
     // 清除所有中断挂起标志
-    for (int i = 0; i < 8; i++) // 遍历所有32位NVIC挂起寄存器(IRQ0-IRQ239)
+    for (int i = 0; i < 8; i++)
     {
-        NVIC->ICPR[i] = 0xFFFFFFFF; // 清除所有挂起中断
+        NVIC->ICPR[i] = 0xFFFFFFFF; 
     }
     SCB->ICSR |= SCB_ICSR_PENDSVCLR_Msk; // 清除PendSV挂起标志
 

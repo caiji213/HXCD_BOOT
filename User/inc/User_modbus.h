@@ -17,7 +17,6 @@ extern void ModBus_Slave_Process(void);
 extern void ModBus_Slave_Received_Data(unsigned char * buf, unsigned int len, unsigned char cmd_from);
 extern void ModBus_Slave_Send_Finished(void);
 
-extern void ModBus_Slave_Response_Data(unsigned char * buf, unsigned int len);
 extern void SendBytesInfoProcUART2(unsigned char * pSendInfo, unsigned int nSendCount);
 
 #ifdef __cplusplus
