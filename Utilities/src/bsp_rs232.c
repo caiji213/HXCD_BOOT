@@ -6,6 +6,7 @@
 */
 
 #include "bsp_rs232.h"
+#include <string.h>
 
 uint32_t rs232_rx_count = 0;
 uint32_t tx_count = 0;
@@ -140,7 +141,8 @@ void bsp_rs232_dma_send(uint8_t *buffer, uint32_t length)
     // 确保长度不超过缓冲区
     if (length > RS232_BUFFER_SIZE)
         length = RS232_BUFFER_SIZE;
-
+    // 完整清理发送缓冲区
+    //memset(buffer, 0, RS232_BUFFER_SIZE); 
     /* 等待上一次发送完成 */
     while (!rs232_tx_flag)
     {
@@ -164,3 +166,70 @@ void bsp_rs232_dma_send(uint8_t *buffer, uint32_t length)
     /* 启动DMA发送 */
     dma_channel_enable(RS232_TX_DMA, RS232_TX_DMA_CH);
 }
+//void bsp_rs232_dma_send(uint8_t *buffer, uint32_t length)
+//{
+//    // 确保长度不超过缓冲区
+//    if (length > RS232_BUFFER_SIZE)
+//        length = RS232_BUFFER_SIZE;
+
+//    /* 等待上一次发送完成 */
+//    while (!rs232_tx_flag)
+//    {
+//        __NOP();
+//    }
+
+//    /* 重置标志 */
+//    rs232_tx_flag = RESET;
+
+//    /* 配置DMA传输参数 */
+//    dma_channel_disable(RS232_TX_DMA, RS232_TX_DMA_CH); // 先禁用通道
+//    
+//    // === 关键修复1: 完全重置DMA通道配置 ===
+//    dma_deinit(RS232_TX_DMA, RS232_TX_DMA_CH);
+//    
+//    // 重新初始化DMA通道
+//    dma_parameter_struct dma_init_struct;
+//    dma_struct_para_init(&dma_init_struct);
+//    dma_init_struct.request = DMA_REQUEST_USART0_TX;
+//    dma_init_struct.direction = DMA_MEMORY_TO_PERIPHERAL;
+//    dma_init_struct.memory_inc = DMA_MEMORY_INCREASE_ENABLE;
+//    dma_init_struct.memory_width = DMA_MEMORY_WIDTH_8BIT;
+//    dma_init_struct.periph_addr = (uint32_t)RS232_TDATA_ADDRESS;
+//    dma_init_struct.periph_inc = DMA_PERIPH_INCREASE_DISABLE;
+//    dma_init_struct.periph_width = DMA_PERIPHERAL_WIDTH_8BIT;
+//    dma_init_struct.priority = DMA_PRIORITY_ULTRA_HIGH;
+//    dma_init(RS232_TX_DMA, RS232_TX_DMA_CH, &dma_init_struct);
+//    dma_circulation_disable(RS232_TX_DMA, RS232_TX_DMA_CH);
+//    // === 结束修复 ===
+
+//    dma_transfer_number_config(RS232_TX_DMA, RS232_TX_DMA_CH, length);
+//    dma_memory_address_config(RS232_TX_DMA, RS232_TX_DMA_CH, (uint32_t)buffer);
+
+//    /* 清除中断标志 */
+//    dma_interrupt_flag_clear(RS232_TX_DMA, RS232_TX_DMA_CH, DMA_INT_FLAG_G);
+
+//    /* 使能DMA传输完成中断 */
+//    dma_interrupt_enable(RS232_TX_DMA, RS232_TX_DMA_CH, DMA_INT_FTF);
+
+//    /* 启动DMA发送 */
+//    dma_channel_enable(RS232_TX_DMA, RS232_TX_DMA_CH);
+//    
+//    // === 关键修复2: 等待传输完成并重置 ===
+//    // 等待DMA传输完成
+//    while(dma_flag_get(RS232_TX_DMA, RS232_TX_DMA_CH, DMA_FLAG_FTF) == RESET);
+//    
+//    // 禁用通道
+//    dma_channel_disable(RS232_TX_DMA, RS232_TX_DMA_CH);
+//    
+//    // 清除所有相关标志
+//    dma_interrupt_flag_clear(RS232_TX_DMA, RS232_TX_DMA_CH, DMA_INT_FLAG_G);
+//    usart_flag_clear(RS232_COM, USART_FLAG_TC);
+//    
+//    // 确保USART状态正常
+//    if(usart_flag_get(RS232_COM, USART_FLAG_ORERR | USART_FLAG_NERR | 
+//                      USART_FLAG_FERR | USART_FLAG_PERR)) {
+//        usart_flag_clear(RS232_COM, USART_FLAG_ORERR | USART_FLAG_NERR | 
+//                         USART_FLAG_FERR | USART_FLAG_PERR);
+//    }
+//    // === 结束修复 ===
+//}

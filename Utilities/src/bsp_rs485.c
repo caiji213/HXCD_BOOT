@@ -3,6 +3,7 @@
     \brief   firmware functions to manage RS485 ports
 	
     \version 2025-06-05 V1.0.0, firmware for GD32G5x3
+	\Author	: Zhang Lin Hao
 */
 
 #include "bsp_rs485.h"
@@ -11,7 +12,6 @@ uint32_t rs485_rx_count = 0;
 uint8_t rs485_rxbuffer[RS485_BUFFER_SIZE];
 __IO FlagStatus rs485_idle_flag = RESET;
 __IO FlagStatus rs485_tx_flag = SET;
-
 
 void bsp_rs485_init(uint32_t Baudrate, uint16_t parity_bit, uint8_t DMA_enable)
 {

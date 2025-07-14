@@ -279,150 +279,35 @@ int Bootloader_EraseAllFlash(void)
 ///*
 //* 双字节烧录
 //*/
-// int Bootloader_ProgramBlock(unsigned char *buf, uint32_t address, uint32_t size)
-//{
-//    // 确保地址在APP区域
-//    if (address < APP_START_ADDR || address > APP_END_ADDR)
-//        return 1;
-
-//    // 确保大小是8的倍数 (双字对齐)
-//    if (size % 8 != 0)
-//        return 2;
-
-//    uint32_t words = size / 8;
-//    uint64_t *data_ptr = (uint64_t *)buf;
-//    fmc_state_enum status;
-//
-//    __disable_irq(); //关中断
-//    // 解锁Flash
-//    fmc_unlock();
-
-//    for (uint32_t i = 0; i < words; i++)
-//    {
-//        status = fmc_doubleword_program(address + i * 8, data_ptr[i]);
-//        if (status != FMC_READY)
-//        {
-//			// 重新锁定Flash
-//            fmc_lock();
-//			__enable_irq(); //开中断
-//            return 3;
-//        }
-//    }
-
-//    // 重新锁定Flash
-//    fmc_lock();
-//	__enable_irq(); //开中断
-//    return 0;
-//}
-// int Bootloader_ProgramBlock(unsigned char *buf, uint32_t address, uint32_t size)
-//{
-//    uint32_t double_words = size / 8;
-//    uint64_t *data_ptr = (uint64_t *)buf;
-//    fmc_state_enum status;
-//
-//    //printf("[Flash] Preparing to program %u double-words\r\n", double_words);
-//    __disable_irq(); // 禁用中断
-//    fmc_unlock();    // 解锁Flash
-
-//    for (uint32_t i = 0; i < double_words; i++)
-//    {
-//        uint32_t current_addr = address + i * 8;
-//
-//        // 关键修改：使用双字编程函数
-//        status = fmc_doubleword_program(current_addr, data_ptr[i]);
-//
-//        if (status != FMC_READY)
-//        {
-//            //printf("[Flash] Error: Programming failed at 0x%08X, status: %d\r\n", current_addr, status);
-//            fmc_lock();
-//            __enable_irq();
-//            return 3;
-//        }
-//    }
-
-//    fmc_lock();     // 锁定Flash
-//    __enable_irq(); // 恢复中断
-//
-//    return 0;
-//}
-
-static FlashProgramState s_prog_state = {0};
-
-void Bootloader_Program_Init(void)
+ int Bootloader_ProgramBlock(unsigned char *buf, uint32_t address, uint32_t size)
 {
-    s_prog_state.buffered = 0;
-}
-/*
- * 新的编程函数，要求数据大小是4的倍数，兼容上位机
- */
-int Bootloader_ProgramBlock(unsigned char *buf, uint32_t address, uint32_t size)
-{
-    // 检查地址是否在APP区域
-    if (address < APP_START_ADDR || address > APP_END_ADDR)
-        return 1;
-
-    // 确保大小是4的倍数
-    if (size % 4 != 0)
-        return 2;
-
+    uint32_t double_words = size / 8;
+    uint64_t *data_ptr = (uint64_t *)buf;
     fmc_state_enum status;
-    uint8_t *data_ptr = buf;
-    uint32_t remaining = size;
 
-    __disable_irq();
-    fmc_unlock();
+    //printf("[Flash] Preparing to program %u double-words\r\n", double_words);
+    __disable_irq(); // 禁用中断
+    fmc_unlock();    // 解锁Flash
 
-    // 如果缓冲区中有4字节数据，与本次数据前4字节合并
-    if (s_prog_state.buffered == 4)
+    for (uint32_t i = 0; i < double_words; i++)
     {
-        // 合并成8字节 (缓冲区的4字节 + 本次前4字节)
-        memcpy(s_prog_state.buffer + 4, data_ptr, 4);
+        uint32_t current_addr = address + i * 8;
 
-        // 写入完整8字节
-        status = fmc_doubleword_program(address, *((uint64_t *)s_prog_state.buffer));
+        // 关键修改：使用双字编程函数
+        status = fmc_doubleword_program(current_addr, data_ptr[i]);
+
         if (status != FMC_READY)
         {
+            //printf("[Flash] Error: Programming failed at 0x%08X, status: %d\r\n", current_addr, status);
             fmc_lock();
             __enable_irq();
             return 3;
         }
-
-        address += 8;
-        data_ptr += 4;
-        remaining -= 4;
-        s_prog_state.buffered = 0;
     }
 
-    // 处理完整的8字节块
-    while (remaining >= 8)
-    {
-        status = fmc_doubleword_program(address, *((uint64_t *)data_ptr));
-        if (status != FMC_READY)
-        {
-            fmc_lock();
-            __enable_irq();
-            return 3;
-        }
+    fmc_lock();     // 锁定Flash
+    __enable_irq(); // 恢复中断
 
-        address += 8;
-        data_ptr += 8;
-        remaining -= 8;
-    }
-
-    // 处理剩余数据（保证是4字节）
-    if (remaining == 4)
-    {
-        // 将剩余4字节存入缓冲区
-        memcpy(s_prog_state.buffer, data_ptr, 4);
-        s_prog_state.buffered = 4;
-    }
-    else
-    {
-        s_prog_state.buffered = 0;
-    }
-
-    fmc_lock();
-    __enable_irq();
     return 0;
 }
 

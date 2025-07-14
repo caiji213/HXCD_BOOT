@@ -2,7 +2,8 @@
 	\file    main.c
 	\brief   HXCD Servo motor magnetic braiding bootlaoder
 
-	\version 2025-06-05, V1.1.0, firmware for GD32G5x3
+	\version 2025-06-05, V1.1.0, firmware for GD32G5x3d
+
 */
 
 #include <stdio.h>
@@ -49,11 +50,11 @@ int main(void)
 	{
 		// 有升级标记，需要留在Boot里
 		// 初始化外设
-		//		bsp_init(Boot_Para & 0xFFFFFF);
-		//		ModBus_Init(Boot_Para >> 24);
-		//		//回复已跳转到Bootloader
-		//		ModBus_Command_Decode_Feedback_JumpBootloader(rs485_rxbuffer,Boot_Para >> 24,ModBus_Slave_Response_Data);//升级跳入后第一次uart1回复
-		//		DoNotCheckTxRxShort = 1;
+		bsp_init(Boot_Para & 0xFFFFFF);
+		ModBus_Init(Boot_Para >> 24);
+		// 回复已跳转到Bootloader
+		ModBus_Command_Decode_Feedback_JumpBootloader(rs485_rxbuffer, Boot_Para >> 24, ModBus_Slave_Response_Data); // 升级跳入后第一次uart1回复
+		DoNotCheckTxRxShort = 1;
 	}
 	else
 	{
@@ -95,7 +96,7 @@ int main(void)
 	else
 	{
 		// 检查app失败进入BootLoader
-		RunAPP_Flag = FLAG_CRC_ERROR;
+		RunAPP_Flag = FLAG_RUNBOOT;
 	}
 
 	// 把设备信息加上编译日期

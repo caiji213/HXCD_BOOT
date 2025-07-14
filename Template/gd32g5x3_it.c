@@ -3,6 +3,7 @@
     \brief   interrupt service routines
 
     \version 2025-06-05, V1.1.0, firmware for GD32G5x3
+	\Author	: Zhang Lin Hao
 */
 #include "gd32g5x3_it.h"
 #include "User_modbus.h"

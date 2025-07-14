@@ -3,6 +3,7 @@
     \brief   firmware functions to manage I2C
 
     \version 2025-06-05, V1.1.0, firmware for GD32G5x3
+	\Author	: Zhang Lin Hao
 */
 
 #include "bsp_i2c.h"

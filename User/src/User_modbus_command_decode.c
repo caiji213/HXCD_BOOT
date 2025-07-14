@@ -4,7 +4,7 @@
 #include "Bootloader.h"
 #include "User_modbus.h"
 #include <stdio.h>
-
+#include <string.h>
 #define ModBus_FUNCODE_Read_Holding_Registers 0x03 // 读保持寄存器
 #define MODBUS_FUNCODE_UPGRADE_INFO 0x41
 #define MODBUS_FUNCODE_PROGRAM_FLASH 0x42
@@ -68,114 +68,56 @@ void ModBus_Command_Decode_Upgrade_Info(unsigned char *buf, unsigned int len, vo
 	Decryption_Init(UpgradeInfo.crc);
 	Uint32_To_BigEndianBytesArray(buf + 3, UpgradeInfo.hwId);
 
-	// 初始化编程状态
-	Bootloader_Program_Init();
 	Feedback(buf, len);
 }
 
-// 8的倍数版本
-// void ModBus_Command_Decode_Program_Flash(unsigned char * buf, unsigned int len, void (*Feedback)(unsigned char * buf, unsigned int len))
-//{
-//     unsigned int addr, size;
-//     int ret = 0;
-//     addr = BigEndianBytesArray_To_Uint32(buf+2);
-//     size = BigEndianBytesArray_To_Uint16(buf+6);
-//
-//     // 物理地址计算
-//     uint32_t physical_addr = APP_START_ADDR + addr;
-//     uint32_t padding = 0;
-//
-//     // 计算对齐填充
-//     if (physical_addr % 8 != 0) {
-//         padding = 8 - (physical_addr % 8);
-//         physical_addr = (physical_addr + 7) & ~0x7; // 8字节对齐
-//     }
-
-//    unsigned char* data_start = buf + 8 + padding;
-//    unsigned int real_size = size - padding;
-
-//    // 修复多余数据问题：检查实际可处理的数据量
-//    unsigned int max_data_available = len - 8 - padding;
-//    if (real_size > max_data_available) {
-//        real_size = max_data_available;
-//    }
-
-//    // 解密数据
-//    if (real_size > 0)
-//	{
-//        // 执行解密操作
-//        unsigned int dwords = (real_size + 3) / 4; // 向上取整到4字节倍数
-//        Decrypt_Block_Data((unsigned long *)data_start, dwords);
-//
-//        // 编程Flash
-//        ret = Bootloader_ProgramBlock(data_start, physical_addr, real_size);
-//    }
-
-//	if (ret)
-//	{
-//		//烧录出错,反馈烧录了0字节
-//		Uint16_To_BigEndianBytesArray(buf+6, 0);
-//	}
-//    len = 10;
-//    ModBus_Fill_CRC16(buf, len);
-//    Feedback(buf, len);
-//}
-
-void ModBus_Command_Decode_Program_Flash(unsigned char *buf, unsigned int len, void (*Feedback)(unsigned char *buf, unsigned int len))
+ void ModBus_Command_Decode_Program_Flash(unsigned char * buf, unsigned int len, void (*Feedback)(unsigned char * buf, unsigned int len))
 {
-	unsigned int addr_offset, size;
-	int ret = 0;
+     unsigned int addr, size;
+     int ret = 0;
+     addr = BigEndianBytesArray_To_Uint32(buf+2);
+     size = BigEndianBytesArray_To_Uint16(buf+6);
 
-	// 解析地址偏移和数据大小
-	addr_offset = BigEndianBytesArray_To_Uint32(buf + 2);
-	size = BigEndianBytesArray_To_Uint16(buf + 6);
+     // 物理地址计算
+     uint32_t physical_addr = APP_START_ADDR + addr;
+     uint32_t padding = 0;
 
-	// 计算物理地址
-	uint32_t physical_addr = APP_START_ADDR + addr_offset;
+     // 计算对齐填充
+     if (physical_addr % 8 != 0) {
+         padding = 8 - (physical_addr % 8);
+         physical_addr = (physical_addr + 7) & ~0x7; // 8字节对齐
+     }
 
-	// 数据起始位置（跳过命令头）
-	unsigned char *data_start = buf + 8;
+    unsigned char* data_start = buf + 8 + padding;
+    unsigned int real_size = size - padding;
 
-	// 检查数据大小是否合法
-	if (size > (len - 8))
+    // 修复多余数据问题：检查实际可处理的数据量
+    unsigned int max_data_available = len - 8 - padding;
+    if (real_size > max_data_available) {
+        real_size = max_data_available;
+    }
+
+    // 解密数据
+    if (real_size > 0)
 	{
-		size = len - 8; // 修正为实际可用大小
-	}
+        // 执行解密操作
+        unsigned int dwords = (real_size + 3) / 4; // 向上取整到4字节倍数
+        Decrypt_Block_Data((unsigned long *)data_start, dwords);
 
-	// 检查数据大小是否是4的倍数
-	if (size % 4 != 0)
-	{
-		// 如果大小不是4的倍数，调整为4的倍数
-		size = (size + 3) & ~0x03; // 向上对齐到4字节倍数
-	}
+        // 编程Flash
+        ret = Bootloader_ProgramBlock(data_start, physical_addr, real_size);
+    }
 
-	// 解密数据（如果需要）
-	// 执行解密操作（按4字节倍数）
-	unsigned int dwords = size / 4;
-	Decrypt_Block_Data((unsigned long *)data_start, dwords);
-
-	// 编程Flash
-	ret = Bootloader_ProgramBlock(data_start, physical_addr, size);
-
-	// 处理响应
 	if (ret)
 	{
-		// 烧录出错，反馈烧录了0字节
-		Uint16_To_BigEndianBytesArray(buf + 6, 0);
+		//烧录出错,反馈烧录了0字节
+		Uint16_To_BigEndianBytesArray(buf+6, 0);
 	}
-	else
-	{
-		// 成功烧录，反馈实际烧录的字节数
-		Uint16_To_BigEndianBytesArray(buf + 6, size);
-	}
-
-	// 填充响应长度并计算CRC
-	len = 10;
-	ModBus_Fill_CRC16(buf, len);
-
-	// 发送响应
-	Feedback(buf, len);
+    len = 10;
+    ModBus_Fill_CRC16(buf, len);
+    Feedback(buf, len);
 }
+
 
 // modbus总线读取App程序长度
 void ModBus_Command_Decode_General_Func_Read_App_Length(unsigned char *buf, unsigned int len, void (*Feedback)(unsigned char *buf, unsigned int len))
