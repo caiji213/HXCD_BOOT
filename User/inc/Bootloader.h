@@ -99,7 +99,7 @@ extern "C"
  */
 
 /* ================== Flash 分区定义 ================== */
-#define BOOT_START_ADDR 0x08000000UL
+#define BOOT_START_ADDR 0x08000000UL                                      // Boot 区起始地址
 #define BOOT_SIZE (24U * 1024UL)                        // 24KB
 #define BOOT_END_ADDR (BOOT_START_ADDR + BOOT_SIZE - 1) // 0x08005FFF
 
@@ -107,25 +107,24 @@ extern "C"
 #define INFO_SIZE (1U * 1024UL)                         // 1KB
 #define INFO_END_ADDR (INFO_START_ADDR + INFO_SIZE - 1) // 0x080063FF
 
-#define APP_START_ADDR (INFO_START_ADDR + INFO_SIZE) // 0x08006400UL   // App 区起始地址
-#define APP_SIZE (487U * 1024UL)                     // 487KB
-#define APP_END_ADDR (APP_START_ADDR + APP_SIZE - 1) // 0x0807FFFF
+#define APP_START_ADDR (INFO_START_ADDR + INFO_SIZE)    // 0x08006400UL   // App 区起始地址
+#define APP_SIZE (487U * 1024UL)                        // 487KB
+#define APP_END_ADDR (APP_START_ADDR + APP_SIZE - 1)    // 0x0807FFFF
 
 /* ================== 校验存储位置 ================== */
-#define APP_SIZE_ADDR (APP_END_ADDR - 7) // 0x0807FFF8 (双字对齐地址)
-#define APP_CRC_ADDR (APP_END_ADDR - 3)  // 0x0807FFFC
+#define APP_SIZE_ADDR (APP_END_ADDR - 7)                 // 0x0807FFF8 (双字对齐地址)
+#define APP_CRC_ADDR (APP_END_ADDR - 3)                  // 0x0807FFFC
 
-#define BOOT_SIZE_ADDR (BOOT_END_ADDR - 7) // 0x08005FF8 (双字对齐地址)
-#define BOOT_CRC_ADDR (BOOT_END_ADDR - 3)  // 0x08005FFC
+#define BOOT_SIZE_ADDR (BOOT_END_ADDR - 7)               // 0x08005FF8 (双字对齐地址)
+#define BOOT_CRC_ADDR (BOOT_END_ADDR - 3)                // 0x08005FFC
 
 /* ================== 运行标志定义 ================== */
-#define FLAG_RUNAPP_FORCE 0x70704166 // fApp 强制进入App
-#define FLAG_GO_APP 0x70704167       // gApp 指令进入App
-#define FLAG_RUNAPP 0x00707041       // App 正常进入App
-#define FLAG_RUNBOOT 0x746F6F42      // Boot
-#define FLAG_CRC_ERROR 0x45435243    // CRCE
+#define FLAG_RUNAPP_FORCE 0x70704166                     // fApp 强制进入App
+#define FLAG_GO_APP 0x70704167                           // gApp 指令进入App
+#define FLAG_RUNAPP 0x00707041                           // App 正常进入App
+#define FLAG_RUNBOOT 0x746F6F42                          // Boot
 
-/* ================== 其他常量定义 ================== */
+/* ================== SRAM_BASE定义 ================== */
 #define Sram_UpdateFlag_Vector (SRAM_BASE)
 
     extern void Bootloader_Hal_Init(void);
@@ -146,7 +145,7 @@ extern "C"
     extern void Bootloader_RunAPP(void);
     extern void Bootloader_Program_Init(void);
     extern int Bootloader_Write_App_Info(uint32_t size, uint32_t crc);
-    // extern int Bootloader_ProgramBlock_4Align(uint32_t address, uint8_t *data, uint32_t size);
+
 #ifdef __cplusplus
 }
 #endif
