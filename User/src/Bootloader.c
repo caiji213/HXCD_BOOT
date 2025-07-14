@@ -107,7 +107,8 @@ void Bootloader_Hal_Init(void)
     // App–≈œ¢
     App_Info.addr_size = APP_SIZE_ADDR;
     App_Info.addr_crc = APP_CRC_ADDR;
-    App_Info.size = *((uint32_t *)(App_Info.addr_size));
+   // App_Info.size = *((uint32_t *)(App_Info.addr_size));
+   App_Info.size = 22288;
     App_Info.crc = *((uint32_t *)(App_Info.addr_crc));
     App_Info.hwId = Bootloader_GethwID();
 
@@ -143,7 +144,7 @@ uint32_t Bootloader_GetBootCRC(void)
         return 0;
 
     return crc_block_data_calculate((void *)Boot_Flash_Info.start_addr,
-                                    boot_size,
+                                    boot_size/ sizeof(uint32_t),
                                     INPUT_FORMAT_WORD);
 }
 
@@ -171,7 +172,7 @@ uint32_t Bootloader_GetAppCRC(void)
         return 0;
 
     return crc_block_data_calculate((void *)App_Flash_Info.start_addr,
-                                    app_size,
+                                    app_size/ sizeof(uint32_t),
                                     INPUT_FORMAT_WORD);
 }
 

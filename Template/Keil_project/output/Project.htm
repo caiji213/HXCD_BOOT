@@ -3,7 +3,7 @@
 <title>Static Call Graph - [.\output\Project.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image .\output\Project.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6180002: Last Updated: Mon Jul 14 17:35:47 2025
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6180002: Last Updated: Mon Jul 14 17:50:44 2025
 <BR><P>
 <H3>Maximum Stack Usage =        348 bytes + Unknown(Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -713,8 +713,7 @@ Global Symbols
 </UL>
 <BR>[Calls]<UL><LI><a href="#[a1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Bootloader_GetAppCRC
 </UL>
-<BR>[Called By]<UL><LI><a href="#[87]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
-<LI><a href="#[d6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ModBus_Command_Decode_General_Func_Read_Stored_CRC
+<BR>[Called By]<UL><LI><a href="#[d6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ModBus_Command_Decode_General_Func_Read_Stored_CRC
 </UL>
 
 <P><STRONG><a name="[a2]"></a>Bootloader_Check_Force</STRONG> (Thumb, 58 bytes, Stack size 24 bytes, bootloader_check_force.o(.text.Bootloader_Check_Force))
@@ -737,15 +736,15 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[d8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ModBus_Command_Decode_General_Func_Erase_App
 </UL>
 
-<P><STRONG><a name="[a1]"></a>Bootloader_GetAppCRC</STRONG> (Thumb, 72 bytes, Stack size 16 bytes, bootloader.o(.text.Bootloader_GetAppCRC))
+<P><STRONG><a name="[a1]"></a>Bootloader_GetAppCRC</STRONG> (Thumb, 74 bytes, Stack size 16 bytes, bootloader.o(.text.Bootloader_GetAppCRC))
 <BR><BR>[Stack]<UL><LI>Max Depth = 36<LI>Call Chain = Bootloader_GetAppCRC &rArr; crc_block_data_calculate
 </UL>
 <BR>[Calls]<UL><LI><a href="#[aa]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;crc_block_data_calculate
 <LI><a href="#[a9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;crc_data_register_reset
 </UL>
-<BR>[Called By]<UL><LI><a href="#[a0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Bootloader_CheckApp
-<LI><a href="#[d5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ModBus_Command_Decode_General_Func_Check_Upgrade
+<BR>[Called By]<UL><LI><a href="#[d5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ModBus_Command_Decode_General_Func_Check_Upgrade
 <LI><a href="#[d4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ModBus_Command_Decode_General_Func_App_Checksum
+<LI><a href="#[a0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Bootloader_CheckApp
 </UL>
 
 <P><STRONG><a name="[13a]"></a>Bootloader_Get_Jump_Flag</STRONG> (Thumb, 12 bytes, Stack size 0 bytes, bootloader.o(.text.Bootloader_Get_Jump_Flag))
@@ -1029,10 +1028,10 @@ Global Symbols
 <P><STRONG><a name="[d6]"></a>ModBus_Command_Decode_General_Func_Read_Stored_CRC</STRONG> (Thumb, 54 bytes, Stack size 24 bytes, user_modbus_command_decode.o(.text.ModBus_Command_Decode_General_Func_Read_Stored_CRC))
 <BR><BR>[Stack]<UL><LI>Max Depth = 96<LI>Call Chain = ModBus_Command_Decode_General_Func_Read_Stored_CRC &rArr; ModBus_Fill_CRC16 &rArr; ModBus_CRC16
 </UL>
-<BR>[Calls]<UL><LI><a href="#[a0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Bootloader_CheckApp
-<LI><a href="#[da]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Uint32_To_BigEndianBytesArray
+<BR>[Calls]<UL><LI><a href="#[da]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Uint32_To_BigEndianBytesArray
 <LI><a href="#[cd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ModBus_Fill_CRC16
 <LI><a href="#[dc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Bootloader_Read_Stored_CRC
+<LI><a href="#[a0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Bootloader_CheckApp
 </UL>
 <BR>[Called By]<UL><LI><a href="#[cb]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ModBus_Command_Decode_General_Func
 </UL>
@@ -1928,13 +1927,12 @@ Global Symbols
 <LI><a href="#[123]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;eeprom_page_write
 </UL>
 
-<P><STRONG><a name="[87]"></a>main</STRONG> (Thumb, 466 bytes, Stack size 56 bytes, main.o(.text.main))
+<P><STRONG><a name="[87]"></a>main</STRONG> (Thumb, 432 bytes, Stack size 56 bytes, main.o(.text.main))
 <BR><BR>[Stack]<UL><LI>Max Depth = 348<LI>Call Chain = main &rArr; bsp_init &rArr; bsp_rs232_init &rArr; usart_baudrate_set &rArr; rcu_clock_freq_get &rArr; rcu_pll_clock_freq_cal
 </UL>
 <BR>[Calls]<UL><LI><a href="#[d9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Bootloader_Set_Jump_Flag
 <LI><a href="#[13a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Bootloader_Get_Jump_Flag
 <LI><a href="#[e1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ModBus_Slave_Process
-<LI><a href="#[a0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Bootloader_CheckApp
 <LI><a href="#[125]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;eeprom_byte_write
 <LI><a href="#[a3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;delay_1ms
 <LI><a href="#[122]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;eeprom_buffer_write
