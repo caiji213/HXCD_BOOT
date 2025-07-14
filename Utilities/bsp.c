@@ -45,7 +45,6 @@ void nvic_config(void)
 {
     nvic_priority_group_set(NVIC_PRIGROUP_PRE1_SUB3);
 
-
     // RS232中断配置
     nvic_irq_enable(RS232_IRQn, 1, 1);        // USART0
     nvic_irq_enable(RS232_TX_DMA_IRQn, 1, 1); // RS232 TX

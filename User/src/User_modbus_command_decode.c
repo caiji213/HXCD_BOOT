@@ -73,6 +73,7 @@ void ModBus_Command_Decode_Upgrade_Info(unsigned char *buf, unsigned int len, vo
 	Feedback(buf, len);
 }
 
+// 8µÄ±¶Êý°æ±¾
 // void ModBus_Command_Decode_Program_Flash(unsigned char * buf, unsigned int len, void (*Feedback)(unsigned char * buf, unsigned int len))
 //{
 //     unsigned int addr, size;

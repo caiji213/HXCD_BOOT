@@ -353,7 +353,7 @@ void Bootloader_Program_Init(void)
     s_prog_state.buffered = 0;
 }
 /*
- * 新的编程函数，要求数据大小是4的倍数
+ * 新的编程函数，要求数据大小是4的倍数，兼容上位机
  */
 int Bootloader_ProgramBlock(unsigned char *buf, uint32_t address, uint32_t size)
 {
@@ -372,7 +372,7 @@ int Bootloader_ProgramBlock(unsigned char *buf, uint32_t address, uint32_t size)
     __disable_irq();
     fmc_unlock();
 
-    // 1. 如果缓冲区中有4字节数据，与本次数据前4字节合并
+    // 如果缓冲区中有4字节数据，与本次数据前4字节合并
     if (s_prog_state.buffered == 4)
     {
         // 合并成8字节 (缓冲区的4字节 + 本次前4字节)
@@ -393,7 +393,7 @@ int Bootloader_ProgramBlock(unsigned char *buf, uint32_t address, uint32_t size)
         s_prog_state.buffered = 0;
     }
 
-    // 2. 处理完整的8字节块
+    // 处理完整的8字节块
     while (remaining >= 8)
     {
         status = fmc_doubleword_program(address, *((uint64_t *)data_ptr));
@@ -409,7 +409,7 @@ int Bootloader_ProgramBlock(unsigned char *buf, uint32_t address, uint32_t size)
         remaining -= 8;
     }
 
-    // 3. 处理剩余数据（保证是4字节）
+    // 处理剩余数据（保证是4字节）
     if (remaining == 4)
     {
         // 将剩余4字节存入缓冲区
@@ -425,6 +425,7 @@ int Bootloader_ProgramBlock(unsigned char *buf, uint32_t address, uint32_t size)
     __enable_irq();
     return 0;
 }
+
 int Bootloader_Write_App_CRC(uint32_t crc)
 {
     uint64_t combined = ((uint64_t)crc << 32) | App_Info.size;
@@ -495,39 +496,6 @@ int Bootloader_Write_App_Size(uint32_t size)
 //    vector_p->func_p();
 //
 //}
-// void Bootloader_RunAPP(void)
-//{
-//    // 使用volatile防止编译器优化
-//    volatile uint32_t *app_vector = (volatile uint32_t *)APP_START_ADDR;
-//
-//    // 直接获取关键地址（避免通过指针结构体）
-//    volatile uint32_t stack_ptr = app_vector[0];  // 栈指针在0x00偏移
-//    volatile uint32_t reset_handler = app_vector[1]; // 复位函数在0x04偏移
-//
-//    // 关闭所有中断
-//    __disable_irq();
-//
-//    // 重置所有外设到默认状态
-//    bsp_deinit();
-//
-//    // 设置VTOR前添加屏障
-//    __DSB();
-//
-//    // 设置向量表偏移（128字节对齐）
-//    SCB->VTOR = APP_START_ADDR & 0xFFFFFF80;
-//
-//    // 完整的内存屏障序列
-//    __DSB();
-//    __ISB();
-//
-//    // 使用内联汇编安全跳转
-//    __ASM volatile(
-//        "msr msp, %0  \n\t"   // 设置主栈指针
-//        "bx %1       \n\t"   // 跳转到复位处理函数
-//        :
-//        : "r" (stack_ptr), "r" (reset_handler)
-//    );
-//}
 void Bootloader_RunAPP(void)
 {
     // 关闭SysTick定时器并清除中断标志
@@ -574,6 +542,7 @@ void Bootloader_RunAPP(void)
         : : "r"(stack_ptr),
         "r"(reset_handler));
 }
+
 uint32_t Bootloader_Read_Stored_CRC(void)
 {
     return *((uint32_t *)(App_Info.addr_crc));

@@ -31,11 +31,11 @@ int Bootloader_Check_Force(void)
 	// 检查串口的TXD和RXD是否短路
 	// 首先发送一串字符串
 	delay_1ms(500);
-	bsp_rs485_dma_send(data_to_send, data_to_send_length);
+	bsp_rs232_dma_send(data_to_send, data_to_send_length);
 	// 延时等待
 	delay_1ms(500);
 	// 检查是否接收到
-	if (MemVerify(data_to_send, rs485_rxbuffer, data_to_send_length))
+	if (MemVerify(data_to_send, rs232_rxbuffer, data_to_send_length))
 	{
 		ret = 1;
 	}
