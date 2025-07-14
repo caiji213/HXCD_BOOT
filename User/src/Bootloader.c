@@ -107,8 +107,8 @@ void Bootloader_Hal_Init(void)
     // App信息
     App_Info.addr_size = APP_SIZE_ADDR;
     App_Info.addr_crc = APP_CRC_ADDR;
-   // App_Info.size = *((uint32_t *)(App_Info.addr_size));
-   App_Info.size = 22288;
+    App_Info.size = *((uint32_t *)(App_Info.addr_size));
+    //App_Info.size = 22288;//测试使用
     App_Info.crc = *((uint32_t *)(App_Info.addr_crc));
     App_Info.hwId = Bootloader_GethwID();
 

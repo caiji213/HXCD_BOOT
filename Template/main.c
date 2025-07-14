@@ -87,12 +87,12 @@ int main(void)
 		// 停留在Bootloader中，可以进行升级
 	}
 
-//	else if ((Bootloader_CheckApp() == 0))
-//	{
-//		// 检查app完整性正确，运行App
-//		RunAPP_Flag = FLAG_RUNAPP; // 设置运行标记为0
-//		Bootloader_RunAPP();
-//	}
+	else if ((Bootloader_CheckApp() == 0))
+	{
+		// 检查app完整性正确，运行App
+		RunAPP_Flag = FLAG_RUNAPP; // 设置运行标记为0
+		Bootloader_RunAPP();
+	}
 	else
 	{
 		// 检查app失败进入BootLoader
