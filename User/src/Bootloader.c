@@ -81,7 +81,7 @@ static void configure_flash_waitstates(void)
 void Bootloader_Hal_Init(void)
 {
     // 配置216MHz等待状态
-    // configure_flash_waitstates();
+    configure_flash_waitstates();
 
     // Bootloader Flash信息
     Boot_Flash_Info.page_size = FLASH_PAGE_SIZE;
@@ -112,8 +112,8 @@ void Bootloader_Hal_Init(void)
     App_Info.hwId = Bootloader_GethwID();
 
     // Boot信息
-    Boot_Info.addr_size = BOOT_END_ADDR - 8;
-    Boot_Info.addr_crc = BOOT_END_ADDR - 4;
+    Boot_Info.addr_size = BOOT_END_ADDR - 7;
+    Boot_Info.addr_crc = BOOT_END_ADDR - 3;
     Boot_Info.size = *((uint32_t *)(Boot_Info.addr_size));
     Boot_Info.crc = *((uint32_t *)(Boot_Info.addr_crc));
     Boot_Info.hwId = Bootloader_GethwID();
@@ -293,7 +293,7 @@ int Bootloader_EraseAllFlash(void)
     {
         uint32_t current_addr = address + i * 8;
 
-        // 关键修改：使用双字编程函数
+        //使用双字编程函数
         status = fmc_doubleword_program(current_addr, data_ptr[i]);
 
         if (status != FMC_READY)
@@ -311,49 +311,61 @@ int Bootloader_EraseAllFlash(void)
     return 0;
 }
 
-int Bootloader_Write_App_CRC(uint32_t crc)
-{
-    uint64_t combined = ((uint64_t)crc << 32) | App_Info.size;
-    fmc_state_enum status;
 
-    __disable_irq(); // 关中断
-    // 解锁Flash
-    fmc_unlock();
-
-    status = fmc_doubleword_program(APP_SIZE_ADDR, combined);
-
-    // 重新锁定Flash
-    fmc_lock();
-    __enable_irq(); // 开中断
-
-    if (status == FMC_READY)
-    {
-        App_Info.crc = crc;
-        return 0;
-    }
-    return 1;
-}
-
+// 在底层实现的适配
 int Bootloader_Write_App_Size(uint32_t size)
 {
-    uint64_t combined = ((uint64_t)App_Info.crc << 32) | size;
+    return Bootloader_Write_App_Info(size, App_Info.crc);
+}
+
+int Bootloader_Write_App_CRC(uint32_t crc)
+{
+    return Bootloader_Write_App_Info(App_Info.size, crc);
+}
+
+// 同时写入App_Size和App_CRC到同一个双字
+//int Bootloader_Write_App_Info(uint32_t size, uint32_t crc)
+//{
+//    // 合并两个32位值到64位
+//    uint64_t combined = ((uint64_t)crc << 32) | size;
+//    fmc_state_enum status;
+
+//    __disable_irq();
+//    fmc_unlock();
+//    
+//    // 必须将两个值作为一个整体写入
+//    status = fmc_doubleword_program(APP_SIZE_ADDR, combined);
+//    
+//    fmc_lock();
+//    __enable_irq();
+
+//    if (status == FMC_READY) {
+//        // 同时更新缓存值
+//        App_Info.size = size;
+//        App_Info.crc = crc;
+//        return 0;
+//    }
+//    return 1;  // 写入失败
+//}
+int Bootloader_Write_App_Info(uint32_t size, uint32_t crc)
+{
     fmc_state_enum status;
-
-    __disable_irq(); // 关中断
-    // 解锁Flash
+    uint64_t combined = ((uint64_t)crc << 32) | size;
+    
+    __disable_irq();
     fmc_unlock();
-
     status = fmc_doubleword_program(APP_SIZE_ADDR, combined);
-
-    // 重新锁定Flash
     fmc_lock();
-    __enable_irq(); // 开中断
-
-    if (status == FMC_READY)
-    {
+    __enable_irq();
+    
+    if (status == FMC_READY) {
         App_Info.size = size;
+        App_Info.crc = crc;
+        printf("[Flash] Write OK - Size:%u CRC:0x%08X\n", size, crc);
         return 0;
     }
+    
+    printf("[Flash] Write FAIL! Addr:0x%08X Stat:%d\n", APP_SIZE_ADDR, status);
     return 1;
 }
 /*跳转到应用App，跳转之前先关闭已经使用的外设，注意，该函数只能在中断外执行，否则跳转后无法再进入中断*/

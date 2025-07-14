@@ -91,7 +91,7 @@ void ModBus_Command_Decode_Upgrade_Info(unsigned char *buf, unsigned int len, vo
     unsigned char* data_start = buf + 8 + padding;
     unsigned int real_size = size - padding;
 
-    // 修复多余数据问题：检查实际可处理的数据量
+    // 检查实际可处理的数据量
     unsigned int max_data_available = len - 8 - padding;
     if (real_size > max_data_available) {
         real_size = max_data_available;
@@ -175,31 +175,61 @@ void ModBus_Command_Decode_General_Func_App_Checksum(unsigned char *buf, unsigne
 }
 
 // modbus更新升级信息
+//void ModBus_Command_Decode_General_Func_Check_Upgrade(unsigned char *buf, unsigned int len, void (*Feedback)(unsigned char *buf, unsigned int len))
+//{
+//	unsigned int crc, ret = 0;
+//#ifndef DEBUG_COMMAND_DECODE_USE_EXTERNAL_RAM
+//	Bootloader_Write_App_Info(UpgradeInfo.size, UpgradeInfo.crc);
+//	crc = Bootloader_GetAppCRC();
+//#else
+//	crc = GetAppCRC_From_Ram();
+//#endif
+//	// 暂时不校验
+////	if(crc != UpgradeInfo.crc)
+////	{
+////		ret = 1;
+////	}
+//	Uint32_To_BigEndianBytesArray(buf + 4, ret);
+//	ModBus_Fill_CRC16(buf, len);
+//	Feedback(buf, len);
+//	    // 添加应用大小打印
+//    printf("[Upgrade] App Size: %u bytes\r\n", UpgradeInfo.size);
+//    
+//    // 添加App_Info结构值打印
+//    printf("[App Info] Stored Size: %u, Stored CRC: 0x%08X\r\n",
+//           App_Info.size, App_Info.crc);
+//}
 void ModBus_Command_Decode_General_Func_Check_Upgrade(unsigned char *buf, unsigned int len, void (*Feedback)(unsigned char *buf, unsigned int len))
 {
-	unsigned int crc, ret = 0;
-#ifndef DEBUG_COMMAND_DECODE_USE_EXTERNAL_RAM
-	Bootloader_Write_App_Size(UpgradeInfo.size);
-	Bootloader_Write_App_CRC(UpgradeInfo.crc);
-	crc = Bootloader_GetAppCRC();
-#else
-	crc = GetAppCRC_From_Ram();
-#endif
-	// 暂时不校验
-	//	if(crc != UpgradeInfo.crc)
-	//	{
-	//		ret = 1;
-	//	}
-	Uint32_To_BigEndianBytesArray(buf + 4, ret);
-	ModBus_Fill_CRC16(buf, len);
-	Feedback(buf, len);
-}
+    unsigned int crc, ret = 0;
+    printf("[Upgrade] Start - Size:%u, Stored CRC:0x%08X\n", 
+           UpgradeInfo.size, App_Info.crc);
 
+#ifndef DEBUG_COMMAND_DECODE_USE_EXTERNAL_RAM
+    crc = Bootloader_GetAppCRC();
+    Bootloader_Write_App_Info(UpgradeInfo.size, UpgradeInfo.crc);
+#else
+    crc = GetAppCRC_From_Ram();
+#endif
+
+    // CRC验证（虽未启用但显示结果）
+    if(crc != UpgradeInfo.crc) {
+        printf("[Upgrade] CRC mismatch (calc:0x%08X vs exp:0x%08X)\n", 
+               crc, UpgradeInfo.crc);
+        ret = 1;
+    }
+
+    Uint32_To_BigEndianBytesArray(buf + 4, ret);
+    ModBus_Fill_CRC16(buf, len);
+    Feedback(buf, len);
+    
+    printf("[Upgrade] Response: ret=0x%X\n", ret);
+}
 // modbus读取存储的App CRC数据
 void ModBus_Command_Decode_General_Func_Read_Stored_CRC(unsigned char *buf, unsigned int len, void (*Feedback)(unsigned char *buf, unsigned int len))
 {
 	unsigned int crc;
-	// crc = Bootloader_Read_Stored_CRC();
+	crc = Bootloader_Read_Stored_CRC();
 	crc = Bootloader_CheckApp();
 	Uint32_To_BigEndianBytesArray(buf + 4, crc);
 	ModBus_Fill_CRC16(buf, len);

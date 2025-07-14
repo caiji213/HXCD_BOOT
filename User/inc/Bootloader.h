@@ -112,8 +112,8 @@ extern "C"
 #define APP_END_ADDR        (APP_START_ADDR + APP_SIZE - 1)    // 0x0807FFFF
 
 /* ================== 校验APP存储位置 ================== */
-#define APP_SIZE_ADDR (APP_END_ADDR - 8) // 0x0807FFF8 (双字对齐地址)
-#define APP_CRC_ADDR (APP_END_ADDR - 4)  // 0x0807FFFC
+#define APP_SIZE_ADDR (APP_END_ADDR - 7) // 0x0807FFF8 (双字对齐地址)
+#define APP_CRC_ADDR (APP_END_ADDR - 3)  // 0x0807FFFC
 
 /* ================== 运行标志定义 ================== */
 #define FLAG_RUNAPP_FORCE 0x70704166 // fApp 强制进入App
@@ -147,6 +147,7 @@ typedef struct {
     extern uint32_t Bootloader_GethwID(void);
     extern void Bootloader_RunAPP(void);
     extern void Bootloader_Program_Init(void);
+	extern int Bootloader_Write_App_Info(uint32_t size, uint32_t crc);
     //extern int Bootloader_ProgramBlock_4Align(uint32_t address, uint8_t *data, uint32_t size);
 #ifdef __cplusplus
 }
