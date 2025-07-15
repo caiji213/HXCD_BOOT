@@ -24,7 +24,7 @@ void Decryption_Init(unsigned long key)
 	crc = CRC_CalcBlockCRC(key);
 #else
 	// crc_deinit();
-	crc_data_register_reset();						   // 仅复位数据寄存器
+	crc_data_register_reset();						   // 复位数据寄存器
 	crc_init_data_register_write(0xFFFFFFFF);		   // 确保初始值正确
 	crc_single_data_calculate(key, INPUT_FORMAT_WORD); // 计算单个32位数据
 	crc = crc_data_register_read();					   // 获取结果

@@ -123,6 +123,7 @@ extern "C"
 #define FLAG_GO_APP 0x70704167                           // gApp 指令进入App
 #define FLAG_RUNAPP 0x00707041                           // App 正常进入App
 #define FLAG_RUNBOOT 0x746F6F42                          // Boot
+#define FLAG_CRC_ERROR 0x45435243                        // CRCE
 
 /* ================== SRAM_BASE定义 ================== */
 #define Sram_UpdateFlag_Vector (SRAM_BASE)

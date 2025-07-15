@@ -33,8 +33,8 @@ int main(void)
 	uint32_t last_tick = g_sys_tick; // 时间计数
 	int DoNotCheckTxRxShort = 0;
 
-	__disable_irq();			 // 关闭系统总中断
-	SCB->VTOR = BOOT_START_ADDR; // 更改中断向量地址
+	__disable_irq();			     // 关闭系统总中断
+	SCB->VTOR = BOOT_START_ADDR;     // 更改中断向量地址
 
 	// 滴答定时器初始化
 	systick_config();
@@ -97,7 +97,7 @@ int main(void)
 	else
 	{
 		// 检查app失败进入BootLoader
-		RunAPP_Flag = FLAG_RUNBOOT;
+		RunAPP_Flag = FLAG_CRC_ERROR;
 	}
 
 	// 把设备信息加上编译日期

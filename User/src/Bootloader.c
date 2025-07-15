@@ -298,7 +298,7 @@ int Bootloader_Write_App_Info(uint32_t size, uint32_t crc)
 // void Bootloader_RunAPP(void)
 //{
 //     volatile vector_t *vector_p = (vector_t *)APP_START_ADDR;
-//	volatile uint32_t stack_arr[100]    = {0}; // Allocate some stack
+//	   volatile uint32_t stack_arr[100]    = {0}; // Allocate some stack
 //                                                // just to show that
 //                                                // the SP should be reset
 //                                                // before the jump - or the
@@ -331,7 +331,8 @@ void Bootloader_RunAPP(void)
     {
         NVIC->ICPR[i] = 0xFFFFFFFF; 
     }
-    SCB->ICSR |= SCB_ICSR_PENDSVCLR_Msk; // 清除PendSV挂起标志
+	// 清除PendSV挂起标志
+    SCB->ICSR |= SCB_ICSR_PENDSVCLR_Msk; 
 
     // 使用volatile防止编译器优化
     volatile uint32_t *app_vector = (volatile uint32_t *)APP_START_ADDR;
@@ -342,7 +343,8 @@ void Bootloader_RunAPP(void)
 
     // 关闭所有中断
     __disable_irq();
-    __set_BASEPRI(0); // 取消任何优先级屏蔽
+	// 取消任何优先级屏蔽
+    __set_BASEPRI(0); 
 
     // 重置所有外设到默认状态
     bsp_deinit();
