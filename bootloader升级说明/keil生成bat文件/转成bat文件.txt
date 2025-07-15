@@ -1,0 +1,3 @@
+$K\ARM\ARMCC\bin\fromelf.exe --bin --output=Debug\Exe\@L.bin !L
+
+..\..\tools\Upgrade\GenDatFile.exe Debug\Exe\@L.bin ..\..\tools\@L.dat
