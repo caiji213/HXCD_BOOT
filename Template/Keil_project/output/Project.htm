@@ -3,7 +3,7 @@
 <title>Static Call Graph - [.\output\Project.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image .\output\Project.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6180002: Last Updated: Tue Jul 15 10:35:02 2025
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6180002: Last Updated: Tue Jul 15 13:03:50 2025
 <BR><P>
 <H3>Maximum Stack Usage =        348 bytes + Unknown(Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -714,8 +714,7 @@ Global Symbols
 </UL>
 <BR>[Calls]<UL><LI><a href="#[a0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Bootloader_GetAppCRC
 </UL>
-<BR>[Called By]<UL><LI><a href="#[87]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
-<LI><a href="#[d4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ModBus_Command_Decode_General_Func_Read_Stored_CRC
+<BR>[Called By]<UL><LI><a href="#[d4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ModBus_Command_Decode_General_Func_Read_Stored_CRC
 </UL>
 
 <P><STRONG><a name="[a1]"></a>Bootloader_Check_Force</STRONG> (Thumb, 58 bytes, Stack size 24 bytes, bootloader_check_force.o(.text.Bootloader_Check_Force))
@@ -744,9 +743,9 @@ Global Symbols
 <BR>[Calls]<UL><LI><a href="#[a9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;crc_block_data_calculate
 <LI><a href="#[a8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;crc_data_register_reset
 </UL>
-<BR>[Called By]<UL><LI><a href="#[9f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Bootloader_CheckApp
-<LI><a href="#[d3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ModBus_Command_Decode_General_Func_Check_Upgrade
+<BR>[Called By]<UL><LI><a href="#[d3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ModBus_Command_Decode_General_Func_Check_Upgrade
 <LI><a href="#[d2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ModBus_Command_Decode_General_Func_App_Checksum
+<LI><a href="#[9f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Bootloader_CheckApp
 </UL>
 
 <P><STRONG><a name="[139]"></a>Bootloader_Get_Jump_Flag</STRONG> (Thumb, 12 bytes, Stack size 0 bytes, bootloader.o(.text.Bootloader_Get_Jump_Flag))
@@ -1028,10 +1027,10 @@ Global Symbols
 <P><STRONG><a name="[d4]"></a>ModBus_Command_Decode_General_Func_Read_Stored_CRC</STRONG> (Thumb, 54 bytes, Stack size 24 bytes, user_modbus_command_decode.o(.text.ModBus_Command_Decode_General_Func_Read_Stored_CRC))
 <BR><BR>[Stack]<UL><LI>Max Depth = 96<LI>Call Chain = ModBus_Command_Decode_General_Func_Read_Stored_CRC &rArr; ModBus_Fill_CRC16 &rArr; ModBus_CRC16
 </UL>
-<BR>[Calls]<UL><LI><a href="#[9f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Bootloader_CheckApp
-<LI><a href="#[d8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Uint32_To_BigEndianBytesArray
+<BR>[Calls]<UL><LI><a href="#[d8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Uint32_To_BigEndianBytesArray
 <LI><a href="#[cb]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ModBus_Fill_CRC16
 <LI><a href="#[da]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Bootloader_Read_Stored_CRC
+<LI><a href="#[9f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Bootloader_CheckApp
 </UL>
 <BR>[Called By]<UL><LI><a href="#[c9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ModBus_Command_Decode_General_Func
 </UL>
@@ -1924,13 +1923,12 @@ Global Symbols
 <LI><a href="#[121]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;eeprom_page_write
 </UL>
 
-<P><STRONG><a name="[87]"></a>main</STRONG> (Thumb, 490 bytes, Stack size 56 bytes, main.o(.text.main))
+<P><STRONG><a name="[87]"></a>main</STRONG> (Thumb, 456 bytes, Stack size 56 bytes, main.o(.text.main))
 <BR><BR>[Stack]<UL><LI>Max Depth = 348<LI>Call Chain = main &rArr; bsp_init &rArr; bsp_rs232_init &rArr; usart_baudrate_set &rArr; rcu_clock_freq_get &rArr; rcu_pll_clock_freq_cal
 </UL>
 <BR>[Calls]<UL><LI><a href="#[d7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Bootloader_Set_Jump_Flag
 <LI><a href="#[139]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Bootloader_Get_Jump_Flag
 <LI><a href="#[df]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ModBus_Slave_Process
-<LI><a href="#[9f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Bootloader_CheckApp
 <LI><a href="#[123]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;eeprom_byte_write
 <LI><a href="#[a2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;delay_1ms
 <LI><a href="#[120]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;eeprom_buffer_write

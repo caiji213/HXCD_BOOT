@@ -182,8 +182,8 @@ void ModBus_Command_Decode_General_Func_Check_Upgrade(unsigned char *buf, unsign
    // printf("[Upgrade] Start - Size:%u, Stored CRC:0x%08X\n", UpgradeInfo.size, App_Info.crc);
 
 #ifndef DEBUG_COMMAND_DECODE_USE_EXTERNAL_RAM
-    crc = Bootloader_GetAppCRC();
     Bootloader_Write_App_Info(UpgradeInfo.size, UpgradeInfo.crc);
+	crc = Bootloader_GetAppCRC();
 #else
     crc = GetAppCRC_From_Ram();
 #endif
