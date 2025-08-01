@@ -70,6 +70,7 @@ int main(void)
 		// 初始化外设
 		bsp_init(Boot_Para & 0xFFFFFF);
 		ModBus_Init(Boot_Para >> 24);
+		bsp_crc_init();
 		// 回复已跳转到Bootloader
 		ModBus_Command_Decode_Feedback_JumpBootloader(rs485_rxbuffer, Boot_Para >> 24, bsp_rs485_dma_send); // 升级跳入后第一次485回复
 		ModBus_Command_Decode_Feedback_JumpBootloader(rs232_rxbuffer, Boot_Para >> 24, bsp_rs232_dma_send); // 升级跳入后第一次232回复
