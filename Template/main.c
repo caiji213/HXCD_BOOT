@@ -24,18 +24,36 @@ uint8_t buf[2] = {0, 0};
 
 #define ARRAYNUM(arr_nanme) (uint32_t)(sizeof(arr_nanme) / sizeof(*(arr_nanme)))
 
-__attribute__((section(".ARM.__at_0x20000000"))) uint32_t RunAPP_Flag;
-__attribute__((section(".ARM.__at_0x20000004"))) uint32_t Boot_Para;
+volatile uint32_t RunAPP_Flag;
+volatile uint32_t Boot_Para;
+/* 备份寄存器处理函数 */
+static void update_Boot_Para(uint32_t value)
+{
+    pmu_backup_write_enable();
+    RTC_BKP4 = value;
+    Boot_Para = value;
+	pmu_backup_write_disable();
+}
+static void update_RunAPP_Flag(uint32_t value)
+{
+    pmu_backup_write_enable();
+    RTC_BKP3 = value;
+    RunAPP_Flag = value;
+	pmu_backup_write_disable();
+}
 
 int main(void)
 {
-	// 变量定义
 	uint32_t last_tick = g_sys_tick; // 时间计数
 	int DoNotCheckTxRxShort = 0;
 
 	__disable_irq();			     // 关闭系统总中断
 	SCB->VTOR = BOOT_START_ADDR;     // 更改中断向量地址
+    bkp_init();
 
+    // 读 BKP 寄存器
+	RunAPP_Flag = RTC_BKP3;
+	Boot_Para= RTC_BKP4;
 	// 滴答定时器初始化
 	systick_config();
 
@@ -66,7 +84,7 @@ int main(void)
 		nvic_config();	// 中断配置
 		__enable_irq(); // 开中断
 		ModBus_Init(1);
-		printf("[boot] bsp_rs232_init,bsp_rs485_init\r\n");
+		//printf("[boot] bsp_rs232_init,bsp_rs485_init\r\n");
 	}
 
 	if (DoNotCheckTxRxShort)
@@ -77,7 +95,7 @@ int main(void)
 	// 检查是否强制进入Bootloader
 	else if (Bootloader_Check_Force())
 	{
-		RunAPP_Flag = 0xFFFFFFFF;			// 设置运行标记为-1
+		update_RunAPP_Flag(0xFFFFFFFF);   // 设置运行标记为-1
 		eeprom_buffer_write(buf, 0xFFE, 2); // 读原值，主要为调试用
 		// 写IIC的初始化参数标志，再重启由APP进行初始化参数
 		delay_1ms(5);
@@ -91,13 +109,14 @@ int main(void)
 	else if ((Bootloader_CheckApp() == 0))
 	{
 		// 检查app完整性正确，运行App
-		RunAPP_Flag = FLAG_RUNAPP; // 设置运行标记为0
+		update_RunAPP_Flag(FLAG_RUNAPP);
 		Bootloader_RunAPP();
 	}
 	else
 	{
 		// 检查app失败进入BootLoader
-		RunAPP_Flag = FLAG_CRC_ERROR;
+		//RunAPP_Flag = FLAG_CRC_ERROR;
+		update_RunAPP_Flag(FLAG_CRC_ERROR);
 	}
 
 	// 把设备信息加上编译日期
@@ -112,7 +131,8 @@ int main(void)
 		// 检查跳转APP的标志
 		if (Bootloader_Get_Jump_Flag())
 		{
-			RunAPP_Flag = FLAG_GO_APP;
+			//RunAPP_Flag = FLAG_GO_APP;
+			update_RunAPP_Flag(FLAG_GO_APP);
 			Bootloader_Set_Jump_Flag(0);
 			Bootloader_RunAPP();
 		}

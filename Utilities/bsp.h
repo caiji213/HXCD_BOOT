@@ -24,7 +24,7 @@ void bsp_deinit(void);
 void nvic_config(void);
 void bsp_init();
 void bsp_crc_init();
-
+void bkp_init(void);
 #ifdef __cplusplus
 }
 #endif

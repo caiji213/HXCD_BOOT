@@ -40,6 +40,12 @@ void bsp_crc_init()
     crc_reverse_output_data_disable();                // 无输出反转
 }
 
+void bkp_init(void)
+{
+    // 使能PWR和BKP时钟
+	rcu_periph_clock_enable(RCU_PMU);
+    rcu_periph_clock_enable(RCU_RTC);
+}
 
 void nvic_config(void)
 {

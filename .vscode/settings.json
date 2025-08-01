@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "bsp_rs232.h": "c",
+        "bsp.h": "c"
+    }
+}
